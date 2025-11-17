@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-display: 'Cinzel', serif;
+    --font-sans: 'Inter', system-ui, sans-serif;
+  }
+
+  body {
+    @apply bg-spartan-stone-50 text-spartan-stone-900;
+  }
+}
+
+@layer components {
+  .spartan-button {
+    @apply px-8 py-3 bg-spartan-crimson-600 text-white font-bold uppercase tracking-wider
+           rounded-none border-2 border-spartan-crimson-600
+           hover:bg-transparent hover:text-spartan-crimson-600
+           transition-all duration-300 shadow-lg hover:shadow-xl;
+  }
+
+  .spartan-button-outline {
+    @apply px-8 py-3 bg-transparent text-spartan-stone-900 font-bold uppercase tracking-wider
+           rounded-none border-2 border-spartan-bronze-600
+           hover:bg-spartan-bronze-600 hover:text-white
+           transition-all duration-300;
+  }
+
+  .spartan-heading {
+    @apply font-display font-bold text-spartan-stone-900 tracking-wide;
+  }
+
+  .spartan-card {
+    @apply bg-white border-l-4 border-spartan-bronze-500 shadow-lg hover:shadow-xl
+           transition-shadow duration-300 p-6;
+  }
+}
