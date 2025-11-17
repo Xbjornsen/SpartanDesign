@@ -1,4 +1,5 @@
 import './globals.css'
+import ClientLayout from '@/components/ClientLayout'
 
 export const metadata = {
   title: 'Spartan Design - Laser Cutting',
@@ -11,8 +12,10 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="en" suppressHydrationWarning>
+      <body>
+        <ClientLayout>{children}</ClientLayout>
+      </body>
     </html>
   )
 }
