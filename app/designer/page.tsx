@@ -236,29 +236,29 @@ function DesignerContent() {
   return (
     <div className="flex flex-col h-screen bg-neutral-50 dark:bg-neutral-900">
       {/* Header */}
-      <header className="bg-neutral-800 dark:bg-neutral-950 text-white p-4 flex justify-between items-center shadow-md border-b border-neutral-700 dark:border-neutral-800">
-        <h1 className="text-2xl font-bold text-white">Spartan Design</h1>
+      <header className="bg-white dark:bg-neutral-950 text-neutral-900 dark:text-white p-4 flex justify-between items-center shadow-md border-b border-neutral-200 dark:border-neutral-800">
+        <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">Spartan Design</h1>
         <div className="flex gap-3 items-center">
           <ThemeToggle />
           <button
             onClick={() => setIs2DView(!is2DView)}
             className={`px-4 py-2 rounded-lg transition-all ${
               is2DView
-                ? 'bg-secondary-400 hover:bg-secondary-500 text-white'
-                : 'bg-neutral-600 hover:bg-neutral-500 text-white'
+                ? 'bg-secondary-400 hover:bg-secondary-500 text-white shadow-sm'
+                : 'bg-neutral-200 hover:bg-neutral-300 dark:bg-neutral-600 dark:hover:bg-neutral-500 text-neutral-900 dark:text-white shadow-sm'
             }`}
           >
             {is2DView ? '2D View' : '3D View'}
           </button>
           <button
             onClick={handleExportSVG}
-            className="px-4 py-2 bg-accent-500 hover:bg-accent-600 text-white rounded-lg transition-all"
+            className="px-4 py-2 bg-accent-400 hover:bg-accent-500 dark:bg-accent-500 dark:hover:bg-accent-600 text-white rounded-lg transition-all shadow-sm"
           >
             Export SVG
           </button>
           <button
             onClick={handleGetQuote}
-            className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-all"
+            className="px-4 py-2 bg-primary-500 hover:bg-primary-600 dark:bg-primary-600 dark:hover:bg-primary-700 text-white rounded-lg transition-all shadow-sm"
           >
             Get Quote
           </button>
