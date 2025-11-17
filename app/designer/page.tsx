@@ -5,6 +5,7 @@ import DesignCanvas from '@/components/DesignCanvas'
 import { DesignProvider, useDesign } from '@/lib/designContext'
 import { Rectangle, Circle, Material, Hole } from '@/lib/types'
 import { exportToSVG, downloadSVG } from '@/lib/exportSVG'
+import ThemeToggle from '@/components/ThemeToggle'
 
 const materials: Material[] = [
   // Mild Steel
@@ -233,30 +234,31 @@ function DesignerContent() {
   }
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <header className="bg-gray-800 text-white p-4 flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Spartan Design</h1>
-        <div className="flex gap-4 items-center">
+      <header className="bg-white dark:bg-gray-950 text-gray-900 dark:text-white p-4 flex justify-between items-center shadow-md border-b border-gray-200 dark:border-gray-800">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Spartan Design</h1>
+        <div className="flex gap-3 items-center">
+          <ThemeToggle />
           <button
             onClick={() => setIs2DView(!is2DView)}
-            className={`px-4 py-2 rounded transition ${
+            className={`px-4 py-2 rounded-lg transition-all shadow-sm ${
               is2DView
-                ? 'bg-purple-600 hover:bg-purple-700'
-                : 'bg-gray-600 hover:bg-gray-700'
+                ? 'bg-secondary-400 hover:bg-secondary-500 text-white'
+                : 'bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-900 dark:text-white'
             }`}
           >
             {is2DView ? '2D View' : '3D View'}
           </button>
           <button
             onClick={handleExportSVG}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded transition"
+            className="px-4 py-2 bg-accent-400 hover:bg-accent-500 dark:bg-accent-500 dark:hover:bg-accent-600 text-white rounded-lg transition-all shadow-sm"
           >
             Export SVG
           </button>
           <button
             onClick={handleGetQuote}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded transition"
+            className="px-4 py-2 bg-primary-500 hover:bg-primary-600 dark:bg-primary-600 dark:hover:bg-primary-700 text-white rounded-lg transition-all shadow-sm"
           >
             Get Quote
           </button>
@@ -266,32 +268,32 @@ function DesignerContent() {
       {/* Main content */}
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar - Tools */}
-        <aside className="w-64 bg-gray-100 p-4 overflow-y-auto">
-          <h2 className="text-lg font-semibold mb-4">Tools</h2>
+        <aside className="w-72 bg-gray-100 dark:bg-gray-800 px-6 py-5 overflow-y-auto border-r border-gray-200 dark:border-gray-700 shadow-sm">
+          <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Tools</h2>
           <div className="space-y-2">
             <button
               onClick={handleAddRectangle}
-              className="w-full px-4 py-2 bg-white border rounded hover:bg-gray-50 transition"
+              className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition text-gray-900 dark:text-gray-100"
             >
               + Rectangle
             </button>
             <button
               onClick={handleAddCircle}
-              className="w-full px-4 py-2 bg-white border rounded hover:bg-gray-50 transition"
+              className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition text-gray-900 dark:text-gray-100"
             >
               + Circle
             </button>
             <button
               disabled
-              className="w-full px-4 py-2 bg-gray-200 border rounded cursor-not-allowed text-gray-500"
+              className="w-full px-4 py-2 bg-gray-200 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg cursor-not-allowed text-gray-500"
             >
               + Custom Path (Coming Soon)
             </button>
           </div>
 
-          <h2 className="text-lg font-semibold mt-8 mb-4">Metal Type</h2>
+          <h2 className="text-lg font-semibold mt-8 mb-4 text-gray-900 dark:text-gray-100">Metal Type</h2>
           <div className="space-y-2">
-            <label className="flex items-center p-3 border rounded cursor-pointer hover:bg-gray-50 transition">
+            <label className="flex items-center p-3 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition bg-white dark:bg-gray-700">
               <input
                 type="radio"
                 name="metalType"
@@ -300,9 +302,9 @@ function DesignerContent() {
                 onChange={(e) => handleMetalTypeChange(e.target.value)}
                 className="mr-3 w-4 h-4"
               />
-              <span className="font-medium">Mild Steel</span>
+              <span className="font-medium text-gray-900 dark:text-gray-100">Mild Steel</span>
             </label>
-            <label className="flex items-center p-3 border rounded cursor-pointer hover:bg-gray-50 transition">
+            <label className="flex items-center p-3 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition bg-white dark:bg-gray-700">
               <input
                 type="radio"
                 name="metalType"
@@ -311,9 +313,9 @@ function DesignerContent() {
                 onChange={(e) => handleMetalTypeChange(e.target.value)}
                 className="mr-3 w-4 h-4"
               />
-              <span className="font-medium">Stainless Steel</span>
+              <span className="font-medium text-gray-900 dark:text-gray-100">Stainless Steel</span>
             </label>
-            <label className="flex items-center p-3 border rounded cursor-pointer hover:bg-gray-50 transition">
+            <label className="flex items-center p-3 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition bg-white dark:bg-gray-700">
               <input
                 type="radio"
                 name="metalType"
@@ -322,15 +324,15 @@ function DesignerContent() {
                 onChange={(e) => handleMetalTypeChange(e.target.value)}
                 className="mr-3 w-4 h-4"
               />
-              <span className="font-medium">Aluminium</span>
+              <span className="font-medium text-gray-900 dark:text-gray-100">Aluminium</span>
             </label>
           </div>
 
-          <h2 className="text-lg font-semibold mt-6 mb-4">Thickness</h2>
+          <h2 className="text-lg font-semibold mt-6 mb-4 text-gray-900 dark:text-gray-100">Thickness</h2>
           <select
             value={selectedThickness}
             onChange={(e) => handleThicknessChange(parseFloat(e.target.value))}
-            className="w-full px-4 py-2 border rounded"
+            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
           >
             {availableThicknesses.map(thickness => {
               return (
@@ -341,59 +343,59 @@ function DesignerContent() {
             })}
           </select>
 
-          <div className="mt-3 p-3 bg-blue-50 rounded border border-blue-200">
-            <p className="text-sm text-gray-700">
+          <div className="mt-3 p-3 bg-accent-50 dark:bg-accent-900/20 rounded-lg border border-accent-200 dark:border-accent-700">
+            <p className="text-sm text-gray-900 dark:text-gray-100">
               <strong>Selected:</strong> {material.name} {material.thickness}mm
             </p>
           </div>
 
-          <h2 className="text-lg font-semibold mt-8 mb-4">Units</h2>
+          <h2 className="text-lg font-semibold mt-8 mb-4 text-gray-900 dark:text-gray-100">Units</h2>
           <div className="flex gap-2">
             <button
               onClick={() => setDisplayUnit('mm')}
-              className={`flex-1 px-3 py-2 rounded border transition ${
+              className={`flex-1 px-3 py-2 rounded-lg border transition ${
                 displayUnit === 'mm'
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white hover:bg-gray-50 border-gray-300'
+                  ? 'bg-primary-500 dark:bg-primary-600 text-white border-primary-500 dark:border-primary-600'
+                  : 'bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100'
               }`}
             >
               mm
             </button>
             <button
               onClick={() => setDisplayUnit('cm')}
-              className={`flex-1 px-3 py-2 rounded border transition ${
+              className={`flex-1 px-3 py-2 rounded-lg border transition ${
                 displayUnit === 'cm'
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white hover:bg-gray-50 border-gray-300'
+                  ? 'bg-primary-500 dark:bg-primary-600 text-white border-primary-500 dark:border-primary-600'
+                  : 'bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100'
               }`}
             >
               cm
             </button>
             <button
               onClick={() => setDisplayUnit('m')}
-              className={`flex-1 px-3 py-2 rounded border transition ${
+              className={`flex-1 px-3 py-2 rounded-lg border transition ${
                 displayUnit === 'm'
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white hover:bg-gray-50 border-gray-300'
+                  ? 'bg-primary-500 dark:bg-primary-600 text-white border-primary-500 dark:border-primary-600'
+                  : 'bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100'
               }`}
             >
               m
             </button>
           </div>
 
-          <h2 className="text-lg font-semibold mt-8 mb-4">
+          <h2 className="text-lg font-semibold mt-8 mb-4 text-gray-900 dark:text-gray-100">
             {selectedShape ? 'Edit Shape Dimensions' : 'New Shape Dimensions'}
           </h2>
           <div className="space-y-2">
             <div>
-              <label className="block text-sm mb-1 font-medium">
+              <label className="block text-sm mb-1 font-medium text-gray-900 dark:text-gray-100">
                 {selectedShape?.type === 'circle' ? `Diameter (${displayUnit})` : `Width (${displayUnit})`}
               </label>
               <input
                 type="number"
                 value={defaultWidth}
                 onChange={(e) => handleWidthChange(parseFloat(e.target.value) || 0)}
-                className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500"
                 placeholder="2"
                 step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
                 min={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
@@ -401,12 +403,12 @@ function DesignerContent() {
             </div>
             {selectedShape?.type !== 'circle' && (
               <div>
-                <label className="block text-sm mb-1 font-medium">Length ({displayUnit})</label>
+                <label className="block text-sm mb-1 font-medium text-gray-900 dark:text-gray-100">Length ({displayUnit})</label>
                 <input
                   type="number"
                   value={defaultLength}
                   onChange={(e) => handleLengthChange(parseFloat(e.target.value) || 0)}
-                  className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500"
                   placeholder="2"
                   step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
                   min={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
@@ -416,39 +418,39 @@ function DesignerContent() {
           </div>
 
           {!selectedShape && (
-            <p className="mt-2 text-xs text-gray-500 italic">
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 italic">
               Set dimensions, then click + Rectangle or + Circle to create a shape
             </p>
           )}
 
           {selectedShape && (
             <>
-              <h2 className="text-lg font-semibold mt-8 mb-4">Shape Actions</h2>
+              <h2 className="text-lg font-semibold mt-8 mb-4 text-gray-900 dark:text-gray-100">Shape Actions</h2>
               <div className="space-y-2">
                 <button
                   onClick={handleDeleteShape}
-                  className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded transition"
+                  className="w-full px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-lg transition"
                 >
                   Delete Shape
                 </button>
               </div>
 
-              <h2 className="text-lg font-semibold mt-8 mb-4">
+              <h2 className="text-lg font-semibold mt-8 mb-4 text-gray-900 dark:text-gray-100">
                 Add New Hole
               </h2>
-              <div className="space-y-3 p-3 bg-gray-50 rounded border">
+              <div className="space-y-3 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-300 dark:border-gray-600">
                 <div>
-                  <label className="block text-xs mb-1 font-medium">Hole Type</label>
+                  <label className="block text-xs mb-1 font-medium text-gray-900 dark:text-gray-100">Hole Type</label>
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleAddHole('circle')}
-                      className="flex-1 px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded text-sm transition"
+                      className="flex-1 px-3 py-2 bg-secondary-400 hover:bg-secondary-500 dark:bg-secondary-500 dark:hover:bg-secondary-600 text-white rounded-lg text-sm transition"
                     >
                       + Circle
                     </button>
                     <button
                       onClick={() => handleAddHole('rectangle')}
-                      className="flex-1 px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded text-sm transition"
+                      className="flex-1 px-3 py-2 bg-secondary-400 hover:bg-secondary-500 dark:bg-secondary-500 dark:hover:bg-secondary-600 text-white rounded-lg text-sm transition"
                     >
                       + Rectangle
                     </button>
@@ -457,40 +459,40 @@ function DesignerContent() {
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-xs mb-1 font-medium">
+                    <label className="block text-xs mb-1 font-medium text-gray-900 dark:text-gray-100">
                       Circle Ø ({displayUnit})
                     </label>
                     <input
                       type="number"
                       value={newHoleDiameter}
                       onChange={(e) => setNewHoleDiameter(parseFloat(e.target.value) || 0)}
-                      className="w-full px-2 py-1 border rounded text-sm"
+                      className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
                       step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
                       min={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
                     />
                   </div>
                   <div>
-                    <label className="block text-xs mb-1 font-medium">
+                    <label className="block text-xs mb-1 font-medium text-gray-900 dark:text-gray-100">
                       Rect W ({displayUnit})
                     </label>
                     <input
                       type="number"
                       value={newHoleWidth}
                       onChange={(e) => setNewHoleWidth(parseFloat(e.target.value) || 0)}
-                      className="w-full px-2 py-1 border rounded text-sm"
+                      className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
                       step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
                       min={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
                     />
                   </div>
                   <div className="col-span-2">
-                    <label className="block text-xs mb-1 font-medium">
+                    <label className="block text-xs mb-1 font-medium text-gray-900 dark:text-gray-100">
                       Rect H ({displayUnit})
                     </label>
                     <input
                       type="number"
                       value={newHoleHeight}
                       onChange={(e) => setNewHoleHeight(parseFloat(e.target.value) || 0)}
-                      className="w-full px-2 py-1 border rounded text-sm"
+                      className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
                       step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
                       min={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
                     />
@@ -499,51 +501,51 @@ function DesignerContent() {
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-xs mb-1 font-medium">
+                    <label className="block text-xs mb-1 font-medium text-gray-900 dark:text-gray-100">
                       Position X ({displayUnit})
                     </label>
                     <input
                       type="number"
                       value={newHoleX}
                       onChange={(e) => setNewHoleX(parseFloat(e.target.value) || 0)}
-                      className="w-full px-2 py-1 border rounded text-sm"
+                      className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
                       step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
                     />
                   </div>
                   <div>
-                    <label className="block text-xs mb-1 font-medium">
+                    <label className="block text-xs mb-1 font-medium text-gray-900 dark:text-gray-100">
                       Position Y ({displayUnit})
                     </label>
                     <input
                       type="number"
                       value={newHoleY}
                       onChange={(e) => setNewHoleY(parseFloat(e.target.value) || 0)}
-                      className="w-full px-2 py-1 border rounded text-sm"
+                      className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
                       step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
                     />
                   </div>
                 </div>
 
-                <p className="text-xs text-gray-500 italic">
+                <p className="text-xs text-gray-500 dark:text-gray-400 italic">
                   Position is relative to shape center (0,0)
                 </p>
               </div>
 
               {selectedShape.holes && selectedShape.holes.length > 0 && (
                 <>
-                  <h2 className="text-lg font-semibold mt-8 mb-4">
+                  <h2 className="text-lg font-semibold mt-8 mb-4 text-gray-900 dark:text-gray-100">
                     Existing Holes ({selectedShape.holes.length})
                   </h2>
                   <div className="space-y-2">
                     {selectedShape.holes.map((hole, index) => (
-                      <div key={hole.id} className="p-3 bg-gray-50 rounded border">
+                      <div key={hole.id} className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-300 dark:border-gray-600">
                         <div className="flex justify-between items-start mb-2">
-                          <span className="text-sm font-medium">
+                          <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                             {hole.type === 'circle' ? 'Circle' : 'Rectangle'} Hole {index + 1}
                           </span>
                           <button
                             onClick={() => handleDeleteHole(hole.id)}
-                            className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs transition"
+                            className="px-2 py-1 bg-rose-500 hover:bg-rose-600 text-white rounded-lg text-xs transition"
                           >
                             Delete
                           </button>
@@ -553,7 +555,7 @@ function DesignerContent() {
                           <div className="space-y-2">
                             {hole.type === 'circle' ? (
                               <div>
-                                <label className="block text-xs mb-1">Diameter ({displayUnit})</label>
+                                <label className="block text-xs mb-1 text-gray-900 dark:text-gray-100">Diameter ({displayUnit})</label>
                                 <input
                                   type="number"
                                   value={hole.radius ? fromMm(hole.radius * 2, displayUnit) : 0}
@@ -561,7 +563,7 @@ function DesignerContent() {
                                     const diameterMm = toMm(parseFloat(e.target.value) || 0, displayUnit)
                                     handleUpdateHole(hole.id, { radius: diameterMm / 2 })
                                   }}
-                                  className="w-full px-2 py-1 border rounded text-sm"
+                                  className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
                                   step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
                                   min={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
                                 />
@@ -569,7 +571,7 @@ function DesignerContent() {
                             ) : (
                               <>
                                 <div>
-                                  <label className="block text-xs mb-1">Width ({displayUnit})</label>
+                                  <label className="block text-xs mb-1 text-gray-900 dark:text-gray-100">Width ({displayUnit})</label>
                                   <input
                                     type="number"
                                     value={fromMm(hole.width || 0, displayUnit)}
@@ -577,13 +579,13 @@ function DesignerContent() {
                                       const widthMm = toMm(parseFloat(e.target.value) || 0, displayUnit)
                                       handleUpdateHole(hole.id, { width: widthMm })
                                     }}
-                                    className="w-full px-2 py-1 border rounded text-sm"
+                                    className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
                                     step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
                                     min={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
                                   />
                                 </div>
                                 <div>
-                                  <label className="block text-xs mb-1">Height ({displayUnit})</label>
+                                  <label className="block text-xs mb-1 text-gray-900 dark:text-gray-100">Height ({displayUnit})</label>
                                   <input
                                     type="number"
                                     value={fromMm(hole.height || 0, displayUnit)}
@@ -591,7 +593,7 @@ function DesignerContent() {
                                       const heightMm = toMm(parseFloat(e.target.value) || 0, displayUnit)
                                       handleUpdateHole(hole.id, { height: heightMm })
                                     }}
-                                    className="w-full px-2 py-1 border rounded text-sm"
+                                    className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
                                     step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
                                     min={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
                                   />
@@ -600,7 +602,7 @@ function DesignerContent() {
                             )}
                             <div className="grid grid-cols-2 gap-2">
                               <div>
-                                <label className="block text-xs mb-1">Position X ({displayUnit})</label>
+                                <label className="block text-xs mb-1 text-gray-900 dark:text-gray-100">Position X ({displayUnit})</label>
                                 <input
                                   type="number"
                                   value={fromMm(hole.position.x, displayUnit)}
@@ -608,12 +610,12 @@ function DesignerContent() {
                                     const xMm = toMm(parseFloat(e.target.value) || 0, displayUnit)
                                     handleUpdateHole(hole.id, { position: { ...hole.position, x: xMm } })
                                   }}
-                                  className="w-full px-2 py-1 border rounded text-sm"
+                                  className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
                                   step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
                                 />
                               </div>
                               <div>
-                                <label className="block text-xs mb-1">Position Y ({displayUnit})</label>
+                                <label className="block text-xs mb-1 text-gray-900 dark:text-gray-100">Position Y ({displayUnit})</label>
                                 <input
                                   type="number"
                                   value={fromMm(hole.position.y, displayUnit)}
@@ -621,31 +623,31 @@ function DesignerContent() {
                                     const yMm = toMm(parseFloat(e.target.value) || 0, displayUnit)
                                     handleUpdateHole(hole.id, { position: { ...hole.position, y: yMm } })
                                   }}
-                                  className="w-full px-2 py-1 border rounded text-sm"
+                                  className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
                                   step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
                                 />
                               </div>
                             </div>
                             <button
                               onClick={() => setEditingHoleId(null)}
-                              className="w-full px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm transition"
+                              className="w-full px-3 py-1 bg-accent-500 hover:bg-accent-600 dark:bg-accent-600 dark:hover:bg-accent-700 text-white rounded-lg text-sm transition"
                             >
                               Done Editing
                             </button>
                           </div>
                         ) : (
                           <div>
-                            <p className="text-xs text-gray-600">
+                            <p className="text-xs text-gray-600 dark:text-gray-400">
                               {hole.type === 'circle'
                                 ? `Ø ${hole.radius ? fromMm(hole.radius * 2, displayUnit).toFixed(2) : 0}${displayUnit}`
                                 : `${fromMm(hole.width || 0, displayUnit).toFixed(2)} × ${fromMm(hole.height || 0, displayUnit).toFixed(2)}${displayUnit}`}
                             </p>
-                            <p className="text-xs text-gray-600">
+                            <p className="text-xs text-gray-600 dark:text-gray-400">
                               Position: ({fromMm(hole.position.x, displayUnit).toFixed(2)}, {fromMm(hole.position.y, displayUnit).toFixed(2)}){displayUnit}
                             </p>
                             <button
                               onClick={() => setEditingHoleId(hole.id)}
-                              className="mt-2 w-full px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition"
+                              className="mt-2 w-full px-3 py-1 bg-primary-500 hover:bg-primary-600 dark:bg-primary-600 dark:hover:bg-primary-700 text-white rounded-lg text-sm transition"
                             >
                               Edit
                             </button>
@@ -659,11 +661,11 @@ function DesignerContent() {
             </>
           )}
 
-          <div className="mt-8 p-3 bg-blue-50 rounded border border-blue-200">
-            <p className="text-sm text-gray-700">
+          <div className="mt-8 p-3 bg-accent-50 dark:bg-accent-900/20 rounded-lg border border-accent-200 dark:border-accent-700">
+            <p className="text-sm text-gray-900 dark:text-gray-100">
               <strong>Shapes:</strong> {shapes.length}
             </p>
-            <p className="text-sm text-gray-700">
+            <p className="text-sm text-gray-900 dark:text-gray-100">
               <strong>Selected:</strong> {selectedShape ? selectedShape.type : 'None'}
             </p>
           </div>
