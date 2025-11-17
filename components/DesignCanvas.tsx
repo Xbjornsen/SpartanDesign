@@ -122,9 +122,8 @@ function Shape3D({ shape, is2DView, setControlsEnabled }: Shape3DProps) {
         baseBrush = new Brush(baseGeom)
       } else if (shape.type === 'circle') {
         const circle = shape as Circle
-        const baseGeom = new THREE.CylinderGeometry(circle.radius, circle.radius, 0.1, 32)
+        const baseGeom = new THREE.CylinderGeometry(circle.radius, circle.radius, 0.1, 64)
         baseBrush = new Brush(baseGeom)
-        baseBrush.rotation.x = -Math.PI / 2
         baseBrush.updateMatrixWorld()
       }
 
@@ -140,7 +139,7 @@ function Shape3D({ shape, is2DView, setControlsEnabled }: Shape3DProps) {
           holeBrush = new Brush(holeGeom)
           holeBrush.position.set(hole.position.x, 0, hole.position.y)
         } else if (hole.type === 'circle' && hole.radius) {
-          const holeGeom = new THREE.CylinderGeometry(hole.radius, hole.radius, 0.2, 32)
+          const holeGeom = new THREE.CylinderGeometry(hole.radius, hole.radius, 0.2, 64)
           holeBrush = new Brush(holeGeom)
           holeBrush.position.set(hole.position.x, 0, hole.position.y)
           // Keep cylinder vertical (default Y-axis alignment) to cut through flat shapes
@@ -189,14 +188,13 @@ function Shape3D({ shape, is2DView, setControlsEnabled }: Shape3DProps) {
       return (
         <mesh
           position={[circle.position.x, yPosition, circle.position.y]}
-          rotation={!geometryWithHoles ? [-Math.PI / 2, 0, 0] : [0, 0, 0]}
           onClick={handleClick}
           onPointerDown={handlePointerDown}
           onPointerOver={() => setHovered(true)}
           onPointerOut={() => setHovered(false)}
           geometry={geometryWithHoles || undefined}
         >
-          {!geometryWithHoles && <cylinderGeometry args={[circle.radius, circle.radius, 0.1, 32]} />}
+          {!geometryWithHoles && <cylinderGeometry args={[circle.radius, circle.radius, 0.1, 64]} />}
           <meshStandardMaterial
             color={color}
             emissive={isSelected ? '#166534' : '#000000'}
