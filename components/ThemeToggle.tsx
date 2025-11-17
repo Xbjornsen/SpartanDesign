@@ -25,20 +25,20 @@ export default function ThemeToggle() {
 
   if (!mounted) {
     return (
-      <div className="fixed top-4 right-4 z-50 p-3 w-12 h-12 rounded-lg bg-neutral-100 dark:bg-neutral-800 shadow-lg border border-neutral-200 dark:border-neutral-700" />
+      <div className="p-2 w-10 h-10 rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700" />
     );
   }
 
   return (
     <button
       onClick={toggleTheme}
-      className="fixed top-4 right-4 z-50 p-3 rounded-lg bg-neutral-100 dark:bg-neutral-800 shadow-lg hover:shadow-xl transition-all duration-300 border border-neutral-200 dark:border-neutral-700"
+      className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all duration-300 border border-neutral-200 dark:border-neutral-600"
       aria-label="Toggle theme"
     >
       {theme === 'light' ? (
         // Moon icon for dark mode
         <svg
-          className="w-6 h-6 text-primary"
+          className="w-5 h-5 text-neutral-700 dark:text-neutral-200"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -53,7 +53,7 @@ export default function ThemeToggle() {
       ) : (
         // Sun icon for light mode
         <svg
-          className="w-6 h-6 text-accent-300"
+          className="w-5 h-5 text-accent-300"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
