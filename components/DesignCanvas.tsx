@@ -262,7 +262,7 @@ export default function DesignCanvas({ is2DView = false, displayUnit = 'mm' }: D
   const grid = gridSettings[displayUnit]
 
   return (
-    <div className="w-full h-screen bg-gray-900">
+    <div className="w-full h-screen bg-neutral-200 dark:bg-neutral-900">
       <Canvas
         camera={{
           position: [50, 50, 50],
@@ -276,9 +276,9 @@ export default function DesignCanvas({ is2DView = false, displayUnit = 'mm' }: D
         <CameraController is2DView={is2DView} />
 
         {/* Lighting */}
-        <ambientLight intensity={0.6} />
-        <directionalLight position={[50, 50, 50]} intensity={1} />
-        <directionalLight position={[-50, 50, -50]} intensity={0.5} />
+        <ambientLight intensity={0.8} />
+        <directionalLight position={[50, 50, 50]} intensity={1.2} />
+        <directionalLight position={[-50, 50, -50]} intensity={0.7} />
 
         {/* Grid helper for reference */}
         <Grid
