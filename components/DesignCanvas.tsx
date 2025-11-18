@@ -1,10 +1,10 @@
 'use client'
 
-import { Canvas, ThreeEvent, useThree } from '@react-three/fiber'
-import { OrbitControls, Grid } from '@react-three/drei'
 import { useDesign } from '@/lib/designContext'
-import { Shape, Rectangle, Circle, Triangle, Pentagon, Hexagon, Star, Heart, Text as TextShape, Hole } from '@/lib/types'
-import { useState, useRef, useEffect, useMemo } from 'react'
+import { Circle, Heart, Hexagon, Pentagon, Rectangle, Shape, Star, Text as TextShape, Triangle } from '@/lib/types'
+import { Center, Grid, OrbitControls, Text3D } from '@react-three/drei'
+import { Canvas, ThreeEvent, useThree } from '@react-three/fiber'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { Brush, Evaluator, SUBTRACTION } from 'three-bvh-csg'
 
@@ -230,7 +230,6 @@ function Shape3D({ shape, is2DView, setControlsEnabled }: Shape3DProps) {
             color={color}
             emissive={isSelected ? '#166534' : '#000000'}
             emissiveIntensity={isSelected ? 0.2 : 0}
-            wireframe={true}
           />
         </mesh>
       )
@@ -253,7 +252,6 @@ function Shape3D({ shape, is2DView, setControlsEnabled }: Shape3DProps) {
             color={color}
             emissive={isSelected ? '#166534' : '#000000'}
             emissiveIntensity={isSelected ? 0.2 : 0}
-            wireframe={true}
           />
         </mesh>
       )
@@ -278,7 +276,6 @@ function Shape3D({ shape, is2DView, setControlsEnabled }: Shape3DProps) {
             color={color}
             emissive={isSelected ? '#166534' : '#000000'}
             emissiveIntensity={isSelected ? 0.2 : 0}
-            wireframe={true}
           />
         </mesh>
       )
@@ -303,7 +300,6 @@ function Shape3D({ shape, is2DView, setControlsEnabled }: Shape3DProps) {
             color={color}
             emissive={isSelected ? '#166534' : '#000000'}
             emissiveIntensity={isSelected ? 0.2 : 0}
-            wireframe={true}
           />
         </mesh>
       )
@@ -328,7 +324,6 @@ function Shape3D({ shape, is2DView, setControlsEnabled }: Shape3DProps) {
             color={color}
             emissive={isSelected ? '#166534' : '#000000'}
             emissiveIntensity={isSelected ? 0.2 : 0}
-            wireframe={true}
           />
         </mesh>
       )
@@ -353,7 +348,6 @@ function Shape3D({ shape, is2DView, setControlsEnabled }: Shape3DProps) {
             color={color}
             emissive={isSelected ? '#166534' : '#000000'}
             emissiveIntensity={isSelected ? 0.2 : 0}
-            wireframe={true}
           />
         </mesh>
       )
@@ -378,7 +372,6 @@ function Shape3D({ shape, is2DView, setControlsEnabled }: Shape3DProps) {
             color={color}
             emissive={isSelected ? '#166534' : '#000000'}
             emissiveIntensity={isSelected ? 0.2 : 0}
-            wireframe={true}
           />
         </mesh>
       )
@@ -387,8 +380,6 @@ function Shape3D({ shape, is2DView, setControlsEnabled }: Shape3DProps) {
     case 'text': {
       const text = shape as TextShape
 
-      // For text, we'll render a simple box with the text label for now
-      // Full text geometry would require loading font files
       return (
         <group
           position={[text.position.x, yPosition, text.position.y]}
@@ -397,15 +388,23 @@ function Shape3D({ shape, is2DView, setControlsEnabled }: Shape3DProps) {
           onPointerOver={() => setHovered(true)}
           onPointerOut={() => setHovered(false)}
         >
-          <mesh rotation={[-Math.PI / 2, 0, 0]}>
-            <planeGeometry args={[text.fontSize, text.fontSize]} />
-            <meshStandardMaterial
-              color={color}
-              emissive={isSelected ? '#166534' : '#000000'}
-              emissiveIntensity={isSelected ? 0.2 : 0}
-              wireframe={true}
-            />
-          </mesh>
+          <Center>
+            <Text3D
+              font="/fonts/helvetiker_regular.typeface.json"
+              size={text.fontSize}
+              height={0.1}
+              curveSegments={12}
+              bevelEnabled={false}
+              rotation={[-Math.PI / 2, 0, 0]}
+            >
+              {text.text || 'TEXT'}
+              <meshStandardMaterial
+                color={color}
+                emissive={isSelected ? '#166534' : '#000000'}
+                emissiveIntensity={isSelected ? 0.2 : 0}
+              />
+            </Text3D>
+          </Center>
         </group>
       )
     }
