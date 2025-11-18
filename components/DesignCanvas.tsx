@@ -3,10 +3,63 @@
 import { Canvas, ThreeEvent, useThree } from '@react-three/fiber'
 import { OrbitControls, Grid } from '@react-three/drei'
 import { useDesign } from '@/lib/designContext'
-import { Shape, Rectangle, Circle, Hole } from '@/lib/types'
+import { Shape, Rectangle, Circle, Triangle, Pentagon, Hexagon, Star, Heart, Text as TextShape, Hole } from '@/lib/types'
 import { useState, useRef, useEffect, useMemo } from 'react'
 import * as THREE from 'three'
 import { Brush, Evaluator, SUBTRACTION } from 'three-bvh-csg'
+
+// Helper function to create regular polygon shape
+function createPolygonShape(sides: number, radius: number): THREE.Shape {
+  const shape = new THREE.Shape()
+  for (let i = 0; i < sides; i++) {
+    const angle = (i / sides) * Math.PI * 2 - Math.PI / 2
+    const x = Math.cos(angle) * radius
+    const y = Math.sin(angle) * radius
+    if (i === 0) {
+      shape.moveTo(x, y)
+    } else {
+      shape.lineTo(x, y)
+    }
+  }
+  shape.closePath()
+  return shape
+}
+
+// Helper function to create star shape
+function createStarShape(outerRadius: number, innerRadius: number, points: number): THREE.Shape {
+  const shape = new THREE.Shape()
+  for (let i = 0; i < points * 2; i++) {
+    const angle = (i / (points * 2)) * Math.PI * 2 - Math.PI / 2
+    const radius = i % 2 === 0 ? outerRadius : innerRadius
+    const x = Math.cos(angle) * radius
+    const y = Math.sin(angle) * radius
+    if (i === 0) {
+      shape.moveTo(x, y)
+    } else {
+      shape.lineTo(x, y)
+    }
+  }
+  shape.closePath()
+  return shape
+}
+
+// Helper function to create heart shape
+function createHeartShape(size: number): THREE.Shape {
+  const shape = new THREE.Shape()
+  const scale = size / 50
+
+  shape.moveTo(0, 15 * scale)
+  shape.bezierCurveTo(0, 15 * scale, -10 * scale, 25 * scale, -25 * scale, 25 * scale)
+  shape.bezierCurveTo(-55 * scale, 25 * scale, -55 * scale, -10 * scale, -55 * scale, -10 * scale)
+  shape.bezierCurveTo(-55 * scale, -25 * scale, -40 * scale, -40 * scale, -25 * scale, -47 * scale)
+  shape.bezierCurveTo(-10 * scale, -54 * scale, 0, -50 * scale, 0, -50 * scale)
+  shape.bezierCurveTo(0, -50 * scale, 10 * scale, -54 * scale, 25 * scale, -47 * scale)
+  shape.bezierCurveTo(40 * scale, -40 * scale, 55 * scale, -25 * scale, 55 * scale, -10 * scale)
+  shape.bezierCurveTo(55 * scale, -10 * scale, 55 * scale, 25 * scale, 25 * scale, 25 * scale)
+  shape.bezierCurveTo(10 * scale, 25 * scale, 0, 15 * scale, 0, 15 * scale)
+
+  return shape
+}
 
 interface Shape3DProps {
   shape: Shape
@@ -177,6 +230,7 @@ function Shape3D({ shape, is2DView, setControlsEnabled }: Shape3DProps) {
             color={color}
             emissive={isSelected ? '#166534' : '#000000'}
             emissiveIntensity={isSelected ? 0.2 : 0}
+            wireframe={true}
           />
         </mesh>
       )
@@ -199,8 +253,160 @@ function Shape3D({ shape, is2DView, setControlsEnabled }: Shape3DProps) {
             color={color}
             emissive={isSelected ? '#166534' : '#000000'}
             emissiveIntensity={isSelected ? 0.2 : 0}
+            wireframe={true}
           />
         </mesh>
+      )
+    }
+
+    case 'triangle': {
+      const triangle = shape as Triangle
+      const triangleShape = createPolygonShape(3, triangle.size)
+      const extrudeSettings = { depth: 0.1, bevelEnabled: false }
+
+      return (
+        <mesh
+          position={[triangle.position.x, yPosition, triangle.position.y]}
+          rotation={[-Math.PI / 2, 0, 0]}
+          onClick={handleClick}
+          onPointerDown={handlePointerDown}
+          onPointerOver={() => setHovered(true)}
+          onPointerOut={() => setHovered(false)}
+        >
+          <extrudeGeometry args={[triangleShape, extrudeSettings]} />
+          <meshStandardMaterial
+            color={color}
+            emissive={isSelected ? '#166534' : '#000000'}
+            emissiveIntensity={isSelected ? 0.2 : 0}
+            wireframe={true}
+          />
+        </mesh>
+      )
+    }
+
+    case 'pentagon': {
+      const pentagon = shape as Pentagon
+      const pentagonShape = createPolygonShape(5, pentagon.size)
+      const extrudeSettings = { depth: 0.1, bevelEnabled: false }
+
+      return (
+        <mesh
+          position={[pentagon.position.x, yPosition, pentagon.position.y]}
+          rotation={[-Math.PI / 2, 0, 0]}
+          onClick={handleClick}
+          onPointerDown={handlePointerDown}
+          onPointerOver={() => setHovered(true)}
+          onPointerOut={() => setHovered(false)}
+        >
+          <extrudeGeometry args={[pentagonShape, extrudeSettings]} />
+          <meshStandardMaterial
+            color={color}
+            emissive={isSelected ? '#166534' : '#000000'}
+            emissiveIntensity={isSelected ? 0.2 : 0}
+            wireframe={true}
+          />
+        </mesh>
+      )
+    }
+
+    case 'hexagon': {
+      const hexagon = shape as Hexagon
+      const hexagonShape = createPolygonShape(6, hexagon.size)
+      const extrudeSettings = { depth: 0.1, bevelEnabled: false }
+
+      return (
+        <mesh
+          position={[hexagon.position.x, yPosition, hexagon.position.y]}
+          rotation={[-Math.PI / 2, 0, 0]}
+          onClick={handleClick}
+          onPointerDown={handlePointerDown}
+          onPointerOver={() => setHovered(true)}
+          onPointerOut={() => setHovered(false)}
+        >
+          <extrudeGeometry args={[hexagonShape, extrudeSettings]} />
+          <meshStandardMaterial
+            color={color}
+            emissive={isSelected ? '#166534' : '#000000'}
+            emissiveIntensity={isSelected ? 0.2 : 0}
+            wireframe={true}
+          />
+        </mesh>
+      )
+    }
+
+    case 'star': {
+      const star = shape as Star
+      const starShape = createStarShape(star.outerRadius, star.innerRadius, star.points)
+      const extrudeSettings = { depth: 0.1, bevelEnabled: false }
+
+      return (
+        <mesh
+          position={[star.position.x, yPosition, star.position.y]}
+          rotation={[-Math.PI / 2, 0, 0]}
+          onClick={handleClick}
+          onPointerDown={handlePointerDown}
+          onPointerOver={() => setHovered(true)}
+          onPointerOut={() => setHovered(false)}
+        >
+          <extrudeGeometry args={[starShape, extrudeSettings]} />
+          <meshStandardMaterial
+            color={color}
+            emissive={isSelected ? '#166534' : '#000000'}
+            emissiveIntensity={isSelected ? 0.2 : 0}
+            wireframe={true}
+          />
+        </mesh>
+      )
+    }
+
+    case 'heart': {
+      const heart = shape as Heart
+      const heartShape = createHeartShape(heart.size)
+      const extrudeSettings = { depth: 0.1, bevelEnabled: false }
+
+      return (
+        <mesh
+          position={[heart.position.x, yPosition, heart.position.y]}
+          rotation={[-Math.PI / 2, 0, 0]}
+          onClick={handleClick}
+          onPointerDown={handlePointerDown}
+          onPointerOver={() => setHovered(true)}
+          onPointerOut={() => setHovered(false)}
+        >
+          <extrudeGeometry args={[heartShape, extrudeSettings]} />
+          <meshStandardMaterial
+            color={color}
+            emissive={isSelected ? '#166534' : '#000000'}
+            emissiveIntensity={isSelected ? 0.2 : 0}
+            wireframe={true}
+          />
+        </mesh>
+      )
+    }
+
+    case 'text': {
+      const text = shape as TextShape
+
+      // For text, we'll render a simple box with the text label for now
+      // Full text geometry would require loading font files
+      return (
+        <group
+          position={[text.position.x, yPosition, text.position.y]}
+          onClick={handleClick}
+          onPointerDown={handlePointerDown}
+          onPointerOver={() => setHovered(true)}
+          onPointerOut={() => setHovered(false)}
+        >
+          <mesh rotation={[-Math.PI / 2, 0, 0]}>
+            <planeGeometry args={[text.fontSize, text.fontSize]} />
+            <meshStandardMaterial
+              color={color}
+              emissive={isSelected ? '#166534' : '#000000'}
+              emissiveIntensity={isSelected ? 0.2 : 0}
+              wireframe={true}
+            />
+          </mesh>
+        </group>
       )
     }
 

@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react'
 import DesignCanvas from '@/components/DesignCanvas'
 import { DesignProvider, useDesign } from '@/lib/designContext'
-import { Rectangle, Circle, Material, Hole } from '@/lib/types'
+import { Rectangle, Circle, Triangle, Pentagon, Hexagon, Star, Heart, Text as TextShape, Material, Hole, ShapeType, Shape } from '@/lib/types'
 import { exportToSVG, downloadSVG } from '@/lib/exportSVG'
 import ThemeToggle from '@/components/ThemeToggle'
+import ShapePalette from '@/components/ShapePalette'
 
 const materials: Material[] = [
   // Mild Steel
@@ -163,9 +164,131 @@ function DesignerContent() {
       radius: diameterMm / 2,
       color: '#3b82f6',
       holes: [],
+      locked: false,
     }
     addShape(newCircle)
     selectShape(newCircle.id)
+  }
+
+  // Generic function to create any shape type
+  const handleAddShapeFromPalette = (shapeType: ShapeType) => {
+    const defaultSize = toMm(Math.min(defaultWidth, defaultLength), displayUnit)
+    let newShape: Shape
+
+    switch (shapeType) {
+      case 'rectangle':
+        newShape = {
+          id: `rect-${Date.now()}`,
+          type: 'rectangle',
+          position: { x: 0, y: 0 },
+          width: toMm(defaultWidth, displayUnit),
+          height: toMm(defaultLength, displayUnit),
+          color: '#3b82f6',
+          holes: [],
+          locked: false,
+        } as Rectangle
+        break
+
+      case 'circle':
+        newShape = {
+          id: `circle-${Date.now()}`,
+          type: 'circle',
+          position: { x: 0, y: 0 },
+          radius: defaultSize / 2,
+          color: '#3b82f6',
+          holes: [],
+          locked: false,
+        } as Circle
+        break
+
+      case 'triangle':
+        newShape = {
+          id: `triangle-${Date.now()}`,
+          type: 'triangle',
+          position: { x: 0, y: 0 },
+          size: defaultSize,
+          color: '#3b82f6',
+          holes: [],
+          locked: false,
+        } as Triangle
+        break
+
+      case 'pentagon':
+        newShape = {
+          id: `pentagon-${Date.now()}`,
+          type: 'pentagon',
+          position: { x: 0, y: 0 },
+          size: defaultSize / 2,
+          color: '#3b82f6',
+          holes: [],
+          locked: false,
+        } as Pentagon
+        break
+
+      case 'hexagon':
+        newShape = {
+          id: `hexagon-${Date.now()}`,
+          type: 'hexagon',
+          position: { x: 0, y: 0 },
+          size: defaultSize / 2,
+          color: '#3b82f6',
+          holes: [],
+          locked: false,
+        } as Hexagon
+        break
+
+      case 'star':
+        newShape = {
+          id: `star-${Date.now()}`,
+          type: 'star',
+          position: { x: 0, y: 0 },
+          outerRadius: defaultSize / 2,
+          innerRadius: defaultSize / 4,
+          points: 5,
+          color: '#3b82f6',
+          holes: [],
+          locked: false,
+        } as Star
+        break
+
+      case 'heart':
+        newShape = {
+          id: `heart-${Date.now()}`,
+          type: 'heart',
+          position: { x: 0, y: 0 },
+          size: defaultSize,
+          color: '#3b82f6',
+          holes: [],
+          locked: false,
+        } as Heart
+        break
+
+      case 'text':
+        newShape = {
+          id: `text-${Date.now()}`,
+          type: 'text',
+          position: { x: 0, y: 0 },
+          text: 'A',
+          fontSize: defaultSize,
+          fontFamily: 'Arial',
+          color: '#3b82f6',
+          holes: [],
+          locked: false,
+        } as TextShape
+        break
+
+      default:
+        return
+    }
+
+    addShape(newShape)
+    selectShape(newShape.id)
+  }
+
+  const handleToggleLock = () => {
+    if (selectedShape) {
+      updateShape(selectedShape.id, { locked: !selectedShape.locked })
+    }
   }
 
   const handleDeleteShape = () => {
@@ -289,6 +412,10 @@ function DesignerContent() {
             >
               + Custom Path (Coming Soon)
             </button>
+          </div>
+
+          <div className="mt-8">
+            <ShapePalette onShapeSelect={handleAddShapeFromPalette} displayUnit={displayUnit} />
           </div>
 
           <h2 className="text-lg font-semibold mt-8 mb-4 text-neutral-900 dark:text-neutral-100">Metal Type</h2>
@@ -427,6 +554,16 @@ function DesignerContent() {
             <>
               <h2 className="text-lg font-semibold mt-8 mb-4 text-neutral-900 dark:text-neutral-100">Shape Actions</h2>
               <div className="space-y-2">
+                <button
+                  onClick={handleToggleLock}
+                  className={`w-full px-4 py-2 rounded-lg transition shadow-sm ${
+                    selectedShape.locked
+                      ? 'bg-amber-500 hover:bg-amber-600 text-white'
+                      : 'bg-accent-500 hover:bg-accent-600 text-white'
+                  }`}
+                >
+                  {selectedShape.locked ? '🔒 Unlock Shape' : '🔓 Lock Shape'}
+                </button>
                 <button
                   onClick={handleDeleteShape}
                   className="w-full px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-lg transition shadow-sm"
