@@ -7,6 +7,7 @@ import { Rectangle, Circle, Triangle, Pentagon, Hexagon, Star, Heart, Text as Te
 import { exportToSVG, downloadSVG } from '@/lib/exportSVG'
 import ThemeToggle from '@/components/ThemeToggle'
 import ShapePalette from '@/components/ShapePalette'
+import SubmitJobModal, { CustomerDetails } from '@/components/SubmitJobModal'
 
 const materials: Material[] = [
   // Mild Steel
@@ -59,6 +60,11 @@ function DesignerContent() {
   // Text editing states
   const [textContent, setTextContent] = useState('TEXT')
   const [textFontSize, setTextFontSize] = useState(10)
+
+  // Submit job modal states
+  const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitMessage, setSubmitMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   const selectedShape = shapes.find(s => s.id === selectedShapeId)
 
@@ -374,9 +380,60 @@ function DesignerContent() {
     }
   }
 
-  const handleGetQuote = () => {
-    // TODO: Implement quote calculation
-    alert('Quote calculation coming soon!')
+  const handleOpenSubmitModal = () => {
+    if (shapes.length === 0) {
+      setSubmitMessage({ type: 'error', text: 'Please add at least one shape to your design before submitting.' })
+      setTimeout(() => setSubmitMessage(null), 5000)
+      return
+    }
+    setIsSubmitModalOpen(true)
+  }
+
+  const handleSubmitJob = async (customerDetails: CustomerDetails) => {
+    setIsSubmitting(true)
+    setSubmitMessage(null)
+
+    try {
+      // Generate SVG content
+      const svgContent = exportToSVG(shapes)
+
+      // Send to API
+      const response = await fetch('/api/submit-job', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          customerDetails,
+          shapes,
+          material,
+          svgContent,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to submit job')
+      }
+
+      // Success
+      setIsSubmitModalOpen(false)
+      setSubmitMessage({
+        type: 'success',
+        text: 'Job submitted successfully! We will contact you shortly with a detailed quote.',
+      })
+      setTimeout(() => setSubmitMessage(null), 10000)
+    } catch (error) {
+      console.error('Submit job error:', error)
+      setSubmitMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Failed to submit job. Please try again.',
+      })
+      setTimeout(() => setSubmitMessage(null), 5000)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -403,10 +460,10 @@ function DesignerContent() {
             Export SVG
           </button>
           <button
-            onClick={handleGetQuote}
-            className="px-4 py-2 bg-primary-500 hover:bg-primary-600 dark:bg-primary-600 dark:hover:bg-primary-700 text-white rounded-lg transition-all shadow-sm"
+            onClick={handleOpenSubmitModal}
+            className="px-4 py-2 bg-primary-500 hover:bg-primary-600 dark:bg-primary-600 dark:hover:bg-primary-700 text-white rounded-lg transition-all shadow-sm font-semibold"
           >
-            Get Quote
+            Submit Job
           </button>
         </div>
       </header>
@@ -863,6 +920,82 @@ function DesignerContent() {
           <DesignCanvas is2DView={is2DView} displayUnit={displayUnit} />
         </main>
       </div>
+
+      {/* Submit Job Modal */}
+      <SubmitJobModal
+        isOpen={isSubmitModalOpen}
+        onClose={() => setIsSubmitModalOpen(false)}
+        onSubmit={handleSubmitJob}
+        isSubmitting={isSubmitting}
+      />
+
+      {/* Success/Error Toast Notification */}
+      {submitMessage && (
+        <div className="fixed bottom-6 right-6 z-50 animate-slide-up">
+          <div
+            className={`px-6 py-4 rounded-lg shadow-lg max-w-md ${
+              submitMessage.type === 'success'
+                ? 'bg-green-500 text-white'
+                : 'bg-rose-500 text-white'
+            }`}
+          >
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0">
+                {submitMessage.type === 'success' ? (
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                )}
+              </div>
+              <div className="flex-1">
+                <p className="font-medium">{submitMessage.text}</p>
+              </div>
+              <button
+                onClick={() => setSubmitMessage(null)}
+                className="flex-shrink-0 text-white hover:text-gray-200"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
