@@ -113,9 +113,6 @@ export default function ShapePalette({ onShapeSelect, displayUnit }: ShapePalett
 
   return (
     <div className="space-y-2">
-      <h3 className="text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-3">
-        Shape Library
-      </h3>
       <div className="grid grid-cols-2 gap-2">
         {shapes.map((shape) => (
           <button
