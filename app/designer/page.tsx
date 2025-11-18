@@ -62,6 +62,10 @@ function DesignerContent() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitMessage, setSubmitMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
+  // Collapsible section states
+  const [isToolsCollapsed, setIsToolsCollapsed] = useState(false)
+  const [isShapeLibraryCollapsed, setIsShapeLibraryCollapsed] = useState(false)
+
   const selectedShape = shapes.find(s => s.id === selectedShapeId)
 
   // Unit conversion functions (internal storage is always in mm)
@@ -449,30 +453,61 @@ function DesignerContent() {
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar - Tools */}
         <aside className="w-72 bg-neutral-100 dark:bg-neutral-800 px-6 py-5 overflow-y-auto border-r border-neutral-200 dark:border-neutral-700 shadow-sm">
-          <h2 className="text-lg font-semibold mb-4 text-neutral-900 dark:text-neutral-100">Tools</h2>
-          <div className="space-y-2">
-            <button
-              onClick={handleAddRectangle}
-              className="w-full px-4 py-2 bg-white dark:bg-neutral-700 border border-neutral-300 dark:border-neutral-600 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-600 transition text-neutral-900 dark:text-neutral-100"
+          <div
+            className="flex justify-between items-center mb-4 cursor-pointer select-none"
+            onClick={() => setIsToolsCollapsed(!isToolsCollapsed)}
+          >
+            <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Tools</h2>
+            <svg
+              className={`w-5 h-5 text-neutral-600 dark:text-neutral-400 transition-transform ${isToolsCollapsed ? '-rotate-90' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              + Rectangle
-            </button>
-            <button
-              onClick={handleAddCircle}
-              className="w-full px-4 py-2 bg-white dark:bg-neutral-700 border border-neutral-300 dark:border-neutral-600 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-600 transition text-neutral-900 dark:text-neutral-100"
-            >
-              + Circle
-            </button>
-            <button
-              disabled
-              className="w-full px-4 py-2 bg-neutral-200 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-lg cursor-not-allowed text-neutral-500 dark:text-neutral-500"
-            >
-              + Custom Path (Coming Soon)
-            </button>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
           </div>
+          {!isToolsCollapsed && (
+            <div className="space-y-2">
+              <button
+                onClick={handleAddRectangle}
+                className="w-full px-4 py-2 bg-white dark:bg-neutral-700 border border-neutral-300 dark:border-neutral-600 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-600 transition text-neutral-900 dark:text-neutral-100"
+              >
+                + Rectangle
+              </button>
+              <button
+                onClick={handleAddCircle}
+                className="w-full px-4 py-2 bg-white dark:bg-neutral-700 border border-neutral-300 dark:border-neutral-600 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-600 transition text-neutral-900 dark:text-neutral-100"
+              >
+                + Circle
+              </button>
+              <button
+                disabled
+                className="w-full px-4 py-2 bg-neutral-200 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-lg cursor-not-allowed text-neutral-500 dark:text-neutral-500"
+              >
+                + Custom Path (Coming Soon)
+              </button>
+            </div>
+          )}
 
           <div className="mt-8">
-            <ShapePalette onShapeSelect={handleAddShapeFromPalette} displayUnit={displayUnit} />
+            <div
+              className="flex justify-between items-center mb-4 cursor-pointer select-none"
+              onClick={() => setIsShapeLibraryCollapsed(!isShapeLibraryCollapsed)}
+            >
+              <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Shape Library</h2>
+              <svg
+                className={`w-5 h-5 text-neutral-600 dark:text-neutral-400 transition-transform ${isShapeLibraryCollapsed ? '-rotate-90' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+            {!isShapeLibraryCollapsed && (
+              <ShapePalette onShapeSelect={handleAddShapeFromPalette} displayUnit={displayUnit} />
+            )}
           </div>
 
           <h2 className="text-lg font-semibold mt-8 mb-4 text-neutral-900 dark:text-neutral-100">Metal Type</h2>
