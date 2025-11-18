@@ -57,6 +57,10 @@ function DesignerContent() {
   // Hole editing states
   const [editingHoleId, setEditingHoleId] = useState<string | null>(null)
 
+  // Text editing states
+  const [textContent, setTextContent] = useState('TEXT')
+  const [textFontSize, setTextFontSize] = useState(10)
+
   // Submit job modal states
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -118,6 +122,9 @@ function DesignerContent() {
       } else if (selectedShape.type === 'circle') {
         setDefaultWidth(fromMm(selectedShape.radius * 2, displayUnit)) // Diameter
         setDefaultLength(fromMm(selectedShape.radius * 2, displayUnit))
+      } else if (selectedShape.type === 'text') {
+        setTextContent(selectedShape.text)
+        setTextFontSize(fromMm(selectedShape.fontSize, displayUnit))
       }
     }
   }, [selectedShapeId, selectedShape, displayUnit])
@@ -140,6 +147,22 @@ function DesignerContent() {
     if (selectedShape && selectedShape.type === 'rectangle') {
       const valueMm = toMm(value, displayUnit)
       updateShape(selectedShape.id, { height: valueMm } as Partial<Rectangle>)
+    }
+  }
+
+  // Text editing handlers
+  const handleTextContentChange = (value: string) => {
+    setTextContent(value)
+    if (selectedShape && selectedShape.type === 'text') {
+      updateShape(selectedShape.id, { text: value } as Partial<TextShape>)
+    }
+  }
+
+  const handleTextFontSizeChange = (value: number) => {
+    setTextFontSize(value)
+    if (selectedShape && selectedShape.type === 'text') {
+      const valueMm = toMm(value, displayUnit)
+      updateShape(selectedShape.id, { fontSize: valueMm } as Partial<TextShape>)
     }
   }
 
@@ -568,38 +591,65 @@ function DesignerContent() {
           </div>
 
           <h2 className="text-lg font-semibold mt-8 mb-4 text-neutral-900 dark:text-neutral-100">
-            {selectedShape ? 'Edit Shape Dimensions' : 'New Shape Dimensions'}
+            {selectedShape ? (selectedShape.type === 'text' ? 'Edit Text' : 'Edit Shape Dimensions') : 'New Shape Dimensions'}
           </h2>
-          <div className="space-y-2">
-            <div>
-              <label className="block text-sm mb-1 font-medium text-neutral-900 dark:text-neutral-100">
-                {selectedShape?.type === 'circle' ? `Diameter (${displayUnit})` : `Width (${displayUnit})`}
-              </label>
-              <input
-                type="number"
-                value={defaultWidth}
-                onChange={(e) => handleWidthChange(parseFloat(e.target.value) || 0)}
-                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-accent-500 bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
-                placeholder="2"
-                step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
-                min={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
-              />
-            </div>
-            {selectedShape?.type !== 'circle' && (
+          {selectedShape?.type === 'text' ? (
+            <div className="space-y-2">
               <div>
-                <label className="block text-sm mb-1 font-medium text-neutral-900 dark:text-neutral-100">Length ({displayUnit})</label>
+                <label className="block text-sm mb-1 font-medium text-neutral-900 dark:text-neutral-100">Text Content</label>
+                <input
+                  type="text"
+                  value={textContent}
+                  onChange={(e) => handleTextContentChange(e.target.value)}
+                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-accent-500 bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
+                  placeholder="Enter text..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm mb-1 font-medium text-neutral-900 dark:text-neutral-100">Font Size ({displayUnit})</label>
                 <input
                   type="number"
-                  value={defaultLength}
-                  onChange={(e) => handleLengthChange(parseFloat(e.target.value) || 0)}
+                  value={textFontSize}
+                  onChange={(e) => handleTextFontSizeChange(parseFloat(e.target.value) || 1)}
+                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-accent-500 bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
+                  placeholder="10"
+                  step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.1' : '1'}
+                  min={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.1' : '1'}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div>
+                <label className="block text-sm mb-1 font-medium text-neutral-900 dark:text-neutral-100">
+                  {selectedShape?.type === 'circle' ? `Diameter (${displayUnit})` : `Width (${displayUnit})`}
+                </label>
+                <input
+                  type="number"
+                  value={defaultWidth}
+                  onChange={(e) => handleWidthChange(parseFloat(e.target.value) || 0)}
                   className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-accent-500 bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
                   placeholder="2"
                   step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
                   min={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
                 />
               </div>
-            )}
-          </div>
+              {selectedShape?.type !== 'circle' && (
+                <div>
+                  <label className="block text-sm mb-1 font-medium text-neutral-900 dark:text-neutral-100">Length ({displayUnit})</label>
+                  <input
+                    type="number"
+                    value={defaultLength}
+                    onChange={(e) => handleLengthChange(parseFloat(e.target.value) || 0)}
+                    className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-accent-500 bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
+                    placeholder="2"
+                    step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
+                    min={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
+                  />
+                </div>
+              )}
+            </div>
+          )}
 
           {!selectedShape && (
             <p className="mt-2 text-xs text-neutral-500 dark:text-neutral-400 italic">

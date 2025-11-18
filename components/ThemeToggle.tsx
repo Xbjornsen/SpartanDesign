@@ -8,30 +8,30 @@ export default function ThemeToggle() {
 
   useEffect(() => {
     setMounted(true);
-    // Check localStorage for saved theme preference
+    // Get current theme from localStorage or system preference
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
-    // Check system preference
     const systemPreference = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    const initialTheme = savedTheme || systemPreference;
-    setTheme(initialTheme);
-    // Apply the theme class to the document
-    if (initialTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    const currentTheme = savedTheme || systemPreference;
+    setTheme(currentTheme);
   }, []);
 
   const toggleTheme = () => {
+    const html = document.documentElement;
     const newTheme = theme === 'light' ? 'dark' : 'light';
+
+    console.log('Toggling theme from', theme, 'to', newTheme);
+
     setTheme(newTheme);
     localStorage.setItem('theme', newTheme);
-    // Apply or remove the dark class
+
+    // Toggle the dark class
     if (newTheme === 'dark') {
-      document.documentElement.classList.add('dark');
+      html.classList.add('dark');
     } else {
-      document.documentElement.classList.remove('dark');
+      html.classList.remove('dark');
     }
+
+    console.log('HTML classes after toggle:', html.classList.toString());
   };
 
   if (!mounted) {
@@ -47,9 +47,9 @@ export default function ThemeToggle() {
       aria-label="Toggle theme"
     >
       {theme === 'light' ? (
-        // Moon icon for dark mode
+        // Moon icon - click to enable dark mode
         <svg
-          className="w-5 h-5 text-neutral-700 dark:text-neutral-200"
+          className="w-5 h-5 text-neutral-700"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -62,9 +62,9 @@ export default function ThemeToggle() {
           />
         </svg>
       ) : (
-        // Sun icon for light mode
+        // Sun icon - click to enable light mode
         <svg
-          className="w-5 h-5 text-accent-300"
+          className="w-5 h-5 text-yellow-300"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
