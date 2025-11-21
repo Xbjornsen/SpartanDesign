@@ -75,6 +75,74 @@ export default function Home() {
         </div>
       </div>
 
+      {/* Gallery Section */}
+      <div className="py-20 bg-neutral-900">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="font-heading text-4xl md:text-5xl font-bold mb-4 text-white">
+              Example Projects
+            </h2>
+            <p className="text-lg text-neutral-400 max-w-2xl mx-auto">
+              See what you can create with our laser cutting design platform
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {/* Example 1 - Decorative Gate */}
+            <div className="group relative overflow-hidden rounded-xl bg-neutral-800 border border-neutral-700 hover:border-accent-500 transition-all">
+              <div className="aspect-square bg-gradient-to-br from-neutral-700 to-neutral-800 flex items-center justify-center p-8">
+                <svg viewBox="0 0 200 200" className="w-full h-full text-accent-400">
+                  <rect x="10" y="10" width="180" height="180" fill="none" stroke="currentColor" strokeWidth="4" />
+                  <circle cx="100" cy="100" r="40" fill="none" stroke="currentColor" strokeWidth="3" />
+                  <path d="M 60 60 L 140 140 M 140 60 L 60 140" stroke="currentColor" strokeWidth="2" />
+                </svg>
+              </div>
+              <div className="p-6">
+                <h3 className="font-heading text-xl font-bold mb-2 text-white">Decorative Gate Panel</h3>
+                <p className="text-sm text-neutral-400">Stainless steel, 3mm thick</p>
+              </div>
+            </div>
+
+            {/* Example 2 - Custom Signage */}
+            <div className="group relative overflow-hidden rounded-xl bg-neutral-800 border border-neutral-700 hover:border-accent-500 transition-all">
+              <div className="aspect-square bg-gradient-to-br from-neutral-700 to-neutral-800 flex items-center justify-center p-8">
+                <svg viewBox="0 0 200 200" className="w-full h-full text-primary-400">
+                  <rect x="20" y="60" width="160" height="80" rx="10" fill="none" stroke="currentColor" strokeWidth="4" />
+                  <text x="100" y="110" textAnchor="middle" className="font-bold text-3xl" fill="currentColor">LOGO</text>
+                </svg>
+              </div>
+              <div className="p-6">
+                <h3 className="font-heading text-xl font-bold mb-2 text-white">Custom Business Sign</h3>
+                <p className="text-sm text-neutral-400">Aluminum, 2mm thick</p>
+              </div>
+            </div>
+
+            {/* Example 3 - Decorative Panel */}
+            <div className="group relative overflow-hidden rounded-xl bg-neutral-800 border border-neutral-700 hover:border-accent-500 transition-all">
+              <div className="aspect-square bg-gradient-to-br from-neutral-700 to-neutral-800 flex items-center justify-center p-8">
+                <svg viewBox="0 0 200 200" className="w-full h-full text-secondary-400">
+                  <circle cx="100" cy="100" r="80" fill="none" stroke="currentColor" strokeWidth="4" />
+                  <path d="M 100 30 L 120 90 L 180 90 L 130 130 L 150 190 L 100 150 L 50 190 L 70 130 L 20 90 L 80 90 Z" fill="none" stroke="currentColor" strokeWidth="3" />
+                </svg>
+              </div>
+              <div className="p-6">
+                <h3 className="font-heading text-xl font-bold mb-2 text-white">Star Pattern Panel</h3>
+                <p className="text-sm text-neutral-400">Mild steel, 4mm thick</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center mt-12">
+            <Link
+              href="/designer"
+              className="inline-block px-8 py-3 bg-neutral-800 hover:bg-neutral-700 text-white font-semibold rounded-lg transition-all border border-neutral-600"
+            >
+              Create Your Own Design
+            </Link>
+          </div>
+        </div>
+      </div>
+
       {/* How It Works Section */}
       <div id="how-it-works" className="bg-neutral-800/30 py-20">
         <div className="container mx-auto px-6">
