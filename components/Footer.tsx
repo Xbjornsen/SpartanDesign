@@ -2,12 +2,12 @@ import Link from 'next/link'
 
 export default function Footer() {
   return (
-    <footer className="bg-neutral-900 border-t border-neutral-800 text-neutral-400">
+    <footer className="bg-white border-t border-neutral-200 text-neutral-700">
       <div className="container mx-auto px-6 py-12">
         <div className="grid md:grid-cols-4 gap-8">
           {/* Company Info */}
           <div>
-            <h3 className="font-heading text-xl font-bold text-white mb-4">Spartan Design</h3>
+            <h3 className="font-heading text-xl font-bold text-neutral-900 mb-4">Spartan Design</h3>
             <p className="text-sm leading-relaxed mb-4">
               Professional laser cutting design platform for custom metalwork, gates, signage, and decorative panels.
             </p>
@@ -15,25 +15,25 @@ export default function Footer() {
 
           {/* Quick Links */}
           <div>
-            <h4 className="font-heading font-semibold text-white mb-4">Quick Links</h4>
+            <h4 className="font-heading font-semibold text-neutral-900 mb-4">Quick Links</h4>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="/" className="hover:text-accent-400 transition">
+                <Link href="/" className="hover:text-primary-600 transition">
                   Home
                 </Link>
               </li>
               <li>
-                <Link href="/designer" className="hover:text-accent-400 transition">
+                <Link href="/designer" className="hover:text-primary-600 transition">
                   Designer
                 </Link>
               </li>
               <li>
-                <a href="#how-it-works" className="hover:text-accent-400 transition">
+                <a href="#how-it-works" className="hover:text-primary-600 transition">
                   How It Works
                 </a>
               </li>
               <li>
-                <a href="#faq" className="hover:text-accent-400 transition">
+                <a href="#faq" className="hover:text-primary-600 transition">
                   FAQ
                 </a>
               </li>
@@ -42,7 +42,7 @@ export default function Footer() {
 
           {/* Materials */}
           <div>
-            <h4 className="font-heading font-semibold text-white mb-4">Materials</h4>
+            <h4 className="font-heading font-semibold text-neutral-900 mb-4">Materials</h4>
             <ul className="space-y-2 text-sm">
               <li>Mild Steel</li>
               <li>Stainless Steel</li>
@@ -53,10 +53,10 @@ export default function Footer() {
 
           {/* Contact */}
           <div>
-            <h4 className="font-heading font-semibold text-white mb-4">Contact</h4>
+            <h4 className="font-heading font-semibold text-neutral-900 mb-4">Contact</h4>
             <ul className="space-y-2 text-sm">
               <li>
-                <a href="mailto:info@spartandesign.com" className="hover:text-accent-400 transition">
+                <a href="mailto:info@spartandesign.com" className="hover:text-primary-600 transition">
                   info@spartandesign.com
                 </a>
               </li>
@@ -65,7 +65,7 @@ export default function Footer() {
                   href="https://github.com/Xbjornsen/SpartanDesign"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-accent-400 transition"
+                  className="hover:text-primary-600 transition"
                   aria-label="GitHub"
                 >
                   <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
@@ -77,8 +77,8 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-neutral-800 mt-8 pt-8 text-center text-sm">
-          <p>&copy; {new Date().getFullYear()} Spartan Design. All rights reserved.</p>
+        <div className="border-t border-neutral-200 mt-8 pt-8 text-center text-sm">
+          <p className="text-neutral-600">&copy; {new Date().getFullYear()} Spartan Design. All rights reserved.</p>
         </div>
       </div>
     </footer>
