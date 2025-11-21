@@ -443,29 +443,29 @@ function DesignerContent() {
   return (
     <div className="flex flex-col h-screen bg-neutral-50 dark:bg-neutral-900">
       {/* Header */}
-      <header className="bg-white dark:bg-neutral-950 text-neutral-900 dark:text-white p-4 flex justify-between items-center shadow-md border-b border-neutral-200 dark:border-neutral-800">
-        <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">Spartan Design</h1>
-        <div className="flex gap-3 items-center">
+      <header className="bg-white dark:bg-neutral-950 text-neutral-900 dark:text-white px-6 py-3 flex justify-between items-center shadow-md border-b border-neutral-200 dark:border-neutral-800">
+        <h1 className="font-heading text-xl font-bold text-neutral-900 dark:text-white">Spartan Design</h1>
+        <div className="flex gap-2 items-center">
           <ThemeToggle />
           <button
             onClick={() => setIs2DView(!is2DView)}
-            className={`px-4 py-2 rounded-lg transition-all ${
+            className={`px-3 py-2 rounded-lg transition-all text-sm font-medium ${
               is2DView
                 ? 'bg-secondary-400 hover:bg-secondary-500 text-white shadow-sm'
-                : 'bg-neutral-200 hover:bg-neutral-300 dark:bg-neutral-600 dark:hover:bg-neutral-500 text-neutral-900 dark:text-white shadow-sm'
+                : 'bg-neutral-200 hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-600 text-neutral-900 dark:text-white shadow-sm'
             }`}
           >
             {is2DView ? '2D View' : '3D View'}
           </button>
           <button
             onClick={handleExportSVG}
-            className="px-4 py-2 bg-accent-400 hover:bg-accent-500 dark:bg-accent-500 dark:hover:bg-accent-600 text-white rounded-lg transition-all shadow-sm"
+            className="px-3 py-2 bg-accent-500 hover:bg-accent-600 dark:bg-accent-500 dark:hover:bg-accent-600 text-white rounded-lg transition-all shadow-sm text-sm font-medium"
           >
             Export SVG
           </button>
           <button
             onClick={handleOpenSubmitModal}
-            className="px-4 py-2 bg-primary-500 hover:bg-primary-600 dark:bg-primary-600 dark:hover:bg-primary-700 text-white rounded-lg transition-all shadow-sm font-semibold"
+            className="px-4 py-2 bg-primary-600 hover:bg-primary-700 dark:bg-primary-600 dark:hover:bg-primary-700 text-white rounded-lg transition-all shadow-sm text-sm font-semibold"
           >
             Submit Job
           </button>
@@ -475,14 +475,14 @@ function DesignerContent() {
       {/* Main content */}
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar - Tools */}
-        <aside className="w-72 bg-neutral-100 dark:bg-neutral-800 px-6 py-5 overflow-y-auto border-r border-neutral-200 dark:border-neutral-700 shadow-sm">
+        <aside className="w-80 bg-white dark:bg-neutral-900 px-4 py-4 overflow-y-auto border-r border-neutral-200 dark:border-neutral-800 shadow-sm">
           <div
-            className="flex justify-between items-center mb-4 cursor-pointer select-none"
+            className="flex justify-between items-center mb-3 cursor-pointer select-none p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition"
             onClick={() => setIsToolsCollapsed(!isToolsCollapsed)}
           >
-            <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Tools</h2>
+            <h2 className="font-heading text-base font-bold text-neutral-900 dark:text-neutral-100">Tools</h2>
             <svg
-              className={`w-5 h-5 text-neutral-600 dark:text-neutral-400 transition-transform ${isToolsCollapsed ? '-rotate-90' : ''}`}
+              className={`w-4 h-4 text-neutral-600 dark:text-neutral-400 transition-transform ${isToolsCollapsed ? '-rotate-90' : ''}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -491,36 +491,36 @@ function DesignerContent() {
             </svg>
           </div>
           {!isToolsCollapsed && (
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <button
                 onClick={handleAddRectangle}
-                className="w-full px-4 py-2 bg-white dark:bg-neutral-700 border border-neutral-300 dark:border-neutral-600 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-600 transition text-neutral-900 dark:text-neutral-100"
+                className="w-full px-3 py-2 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-accent-50 dark:hover:bg-accent-900/20 hover:border-accent-400 transition text-neutral-900 dark:text-neutral-100 text-sm font-medium"
               >
                 + Rectangle
               </button>
               <button
                 onClick={handleAddCircle}
-                className="w-full px-4 py-2 bg-white dark:bg-neutral-700 border border-neutral-300 dark:border-neutral-600 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-600 transition text-neutral-900 dark:text-neutral-100"
+                className="w-full px-3 py-2 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-accent-50 dark:hover:bg-accent-900/20 hover:border-accent-400 transition text-neutral-900 dark:text-neutral-100 text-sm font-medium"
               >
                 + Circle
               </button>
               <button
                 disabled
-                className="w-full px-4 py-2 bg-neutral-200 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-lg cursor-not-allowed text-neutral-500 dark:text-neutral-500"
+                className="w-full px-3 py-2 bg-neutral-200 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-lg cursor-not-allowed text-neutral-500 dark:text-neutral-600 text-sm"
               >
-                + Custom Path (Coming Soon)
+                + Custom Path (Soon)
               </button>
             </div>
           )}
 
-          <div className="mt-8">
+          <div className="mt-6">
             <div
-              className="flex justify-between items-center mb-4 cursor-pointer select-none"
+              className="flex justify-between items-center mb-3 cursor-pointer select-none p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition"
               onClick={() => setIsShapeLibraryCollapsed(!isShapeLibraryCollapsed)}
             >
-              <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Shape Library</h2>
+              <h2 className="font-heading text-base font-bold text-neutral-900 dark:text-neutral-100">Shape Library</h2>
               <svg
-                className={`w-5 h-5 text-neutral-600 dark:text-neutral-400 transition-transform ${isShapeLibraryCollapsed ? '-rotate-90' : ''}`}
+                className={`w-4 h-4 text-neutral-600 dark:text-neutral-400 transition-transform ${isShapeLibraryCollapsed ? '-rotate-90' : ''}`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -533,48 +533,48 @@ function DesignerContent() {
             )}
           </div>
 
-          <h2 className="text-lg font-semibold mt-8 mb-4 text-neutral-900 dark:text-neutral-100">Metal Type</h2>
-          <div className="space-y-2">
-            <label className="flex items-center p-3 border border-neutral-300 dark:border-neutral-600 rounded-lg cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-700 transition bg-white dark:bg-neutral-700">
+          <h2 className="font-heading text-base font-bold mt-6 mb-3 text-neutral-900 dark:text-neutral-100">Metal Type</h2>
+          <div className="space-y-1.5">
+            <label className="flex items-center p-2.5 border border-neutral-200 dark:border-neutral-700 rounded-lg cursor-pointer hover:bg-accent-50 dark:hover:bg-accent-900/10 hover:border-accent-400 transition bg-neutral-100 dark:bg-neutral-800">
               <input
                 type="radio"
                 name="metalType"
                 value="Mild Steel"
                 checked={selectedMetalType === 'Mild Steel'}
                 onChange={(e) => handleMetalTypeChange(e.target.value)}
-                className="mr-3 w-4 h-4 accent-primary-500"
+                className="mr-2.5 w-4 h-4 accent-accent-500"
               />
-              <span className="font-medium text-neutral-900 dark:text-neutral-100">Mild Steel</span>
+              <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">Mild Steel</span>
             </label>
-            <label className="flex items-center p-3 border border-neutral-300 dark:border-neutral-600 rounded-lg cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-700 transition bg-white dark:bg-neutral-700">
+            <label className="flex items-center p-2.5 border border-neutral-200 dark:border-neutral-700 rounded-lg cursor-pointer hover:bg-accent-50 dark:hover:bg-accent-900/10 hover:border-accent-400 transition bg-neutral-100 dark:bg-neutral-800">
               <input
                 type="radio"
                 name="metalType"
                 value="Stainless Steel"
                 checked={selectedMetalType === 'Stainless Steel'}
                 onChange={(e) => handleMetalTypeChange(e.target.value)}
-                className="mr-3 w-4 h-4 accent-primary-500"
+                className="mr-2.5 w-4 h-4 accent-accent-500"
               />
-              <span className="font-medium text-neutral-900 dark:text-neutral-100">Stainless Steel</span>
+              <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">Stainless Steel</span>
             </label>
-            <label className="flex items-center p-3 border border-neutral-300 dark:border-neutral-600 rounded-lg cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-700 transition bg-white dark:bg-neutral-700">
+            <label className="flex items-center p-2.5 border border-neutral-200 dark:border-neutral-700 rounded-lg cursor-pointer hover:bg-accent-50 dark:hover:bg-accent-900/10 hover:border-accent-400 transition bg-neutral-100 dark:bg-neutral-800">
               <input
                 type="radio"
                 name="metalType"
                 value="Aluminium"
                 checked={selectedMetalType === 'Aluminium'}
                 onChange={(e) => handleMetalTypeChange(e.target.value)}
-                className="mr-3 w-4 h-4 accent-primary-500"
+                className="mr-2.5 w-4 h-4 accent-accent-500"
               />
-              <span className="font-medium text-neutral-900 dark:text-neutral-100">Aluminium</span>
+              <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">Aluminium</span>
             </label>
           </div>
 
-          <h2 className="text-lg font-semibold mt-6 mb-4 text-neutral-900 dark:text-neutral-100">Thickness</h2>
+          <h2 className="font-heading text-base font-bold mt-5 mb-3 text-neutral-900 dark:text-neutral-100">Thickness</h2>
           <select
             value={selectedThickness}
             onChange={(e) => handleThicknessChange(parseFloat(e.target.value))}
-            className="w-full px-4 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
+            className="w-full px-3 py-2 border border-neutral-200 dark:border-neutral-700 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 text-sm focus:ring-2 focus:ring-accent-500 focus:border-accent-500"
           >
             {availableThicknesses.map(thickness => {
               return (
@@ -585,48 +585,48 @@ function DesignerContent() {
             })}
           </select>
 
-          <div className="mt-3 p-3 bg-accent-50 dark:bg-accent-900/20 rounded-lg border border-accent-200 dark:border-accent-700">
-            <p className="text-sm text-neutral-800 dark:text-neutral-200">
+          <div className="mt-2.5 p-2.5 bg-accent-50 dark:bg-accent-900/10 rounded-lg border border-accent-300 dark:border-accent-700/40">
+            <p className="text-xs text-neutral-800 dark:text-neutral-200">
               <strong>Selected:</strong> {material.name} {material.thickness}mm
             </p>
           </div>
 
-          <h2 className="text-lg font-semibold mt-8 mb-4 text-neutral-900 dark:text-neutral-100">Units</h2>
-          <div className="flex gap-2">
+          <h2 className="font-heading text-base font-bold mt-5 mb-3 text-neutral-900 dark:text-neutral-100">Units</h2>
+          <div className="flex gap-1.5">
             <button
               onClick={() => setDisplayUnit('mm')}
-              className={`flex-1 px-3 py-2 rounded-lg border transition ${
+              className={`flex-1 px-3 py-2 rounded-lg border transition text-sm font-medium ${
                 displayUnit === 'mm'
-                  ? 'bg-accent-500 text-white border-accent-500'
-                  : 'bg-white dark:bg-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-600 border-neutral-300 dark:border-neutral-600 text-neutral-900 dark:text-neutral-100'
+                  ? 'bg-accent-500 text-white border-accent-500 shadow-sm'
+                  : 'bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-neutral-100'
               }`}
             >
               mm
             </button>
             <button
               onClick={() => setDisplayUnit('cm')}
-              className={`flex-1 px-3 py-2 rounded-lg border transition ${
+              className={`flex-1 px-3 py-2 rounded-lg border transition text-sm font-medium ${
                 displayUnit === 'cm'
-                  ? 'bg-accent-500 text-white border-accent-500'
-                  : 'bg-white dark:bg-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-600 border-neutral-300 dark:border-neutral-600 text-neutral-900 dark:text-neutral-100'
+                  ? 'bg-accent-500 text-white border-accent-500 shadow-sm'
+                  : 'bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-neutral-100'
               }`}
             >
               cm
             </button>
             <button
               onClick={() => setDisplayUnit('m')}
-              className={`flex-1 px-3 py-2 rounded-lg border transition ${
+              className={`flex-1 px-3 py-2 rounded-lg border transition text-sm font-medium ${
                 displayUnit === 'm'
-                  ? 'bg-accent-500 text-white border-accent-500'
-                  : 'bg-white dark:bg-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-600 border-neutral-300 dark:border-neutral-600 text-neutral-900 dark:text-neutral-100'
+                  ? 'bg-accent-500 text-white border-accent-500 shadow-sm'
+                  : 'bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-neutral-100'
               }`}
             >
               m
             </button>
           </div>
 
-          <h2 className="text-lg font-semibold mt-8 mb-4 text-neutral-900 dark:text-neutral-100">
-            {selectedShape ? (selectedShape.type === 'text' ? 'Edit Text' : 'Edit Shape Dimensions') : 'New Shape Dimensions'}
+          <h2 className="font-heading text-base font-bold mt-6 mb-3 text-neutral-900 dark:text-neutral-100">
+            {selectedShape ? (selectedShape.type === 'text' ? 'Edit Text' : 'Edit Dimensions') : 'New Shape Size'}
           </h2>
           {selectedShape?.type === 'text' ? (
             <div className="space-y-2">
@@ -694,8 +694,8 @@ function DesignerContent() {
 
           {selectedShape && (
             <>
-              <h2 className="text-lg font-semibold mt-8 mb-4 text-neutral-900 dark:text-neutral-100">Shape Actions</h2>
-              <div className="space-y-2">
+              <h2 className="font-heading text-base font-bold mt-6 mb-3 text-neutral-900 dark:text-neutral-100">Shape Actions</h2>
+              <div className="space-y-1.5">
                 <button
                   onClick={handleToggleLock}
                   className={`w-full px-4 py-2 rounded-lg transition shadow-sm ${
@@ -714,7 +714,7 @@ function DesignerContent() {
                 </button>
               </div>
 
-              <h2 className="text-lg font-semibold mt-8 mb-4 text-neutral-900 dark:text-neutral-100">
+              <h2 className="font-heading text-base font-bold mt-6 mb-3 text-neutral-900 dark:text-neutral-100">
                 Add New Hole
               </h2>
               <div className="space-y-3 p-3 bg-neutral-50 dark:bg-neutral-900/50 rounded-lg border border-neutral-300 dark:border-neutral-700">
@@ -812,7 +812,7 @@ function DesignerContent() {
 
               {selectedShape.holes && selectedShape.holes.length > 0 && (
                 <>
-                  <h2 className="text-lg font-semibold mt-8 mb-4 text-neutral-900 dark:text-neutral-100">
+                  <h2 className="font-heading text-base font-bold mt-6 mb-3 text-neutral-900 dark:text-neutral-100">
                     Existing Holes ({selectedShape.holes.length})
                   </h2>
                   <div className="space-y-2">
@@ -940,11 +940,11 @@ function DesignerContent() {
             </>
           )}
 
-          <div className="mt-8 p-3 bg-accent-50 dark:bg-accent-900/20 rounded-lg border border-accent-200 dark:border-accent-700">
-            <p className="text-sm text-neutral-800 dark:text-neutral-200">
+          <div className="mt-6 p-3 bg-accent-50 dark:bg-accent-900/10 rounded-lg border border-accent-300 dark:border-accent-700/40">
+            <p className="text-xs text-neutral-800 dark:text-neutral-200 mb-1">
               <strong>Shapes:</strong> {shapes.length}
             </p>
-            <p className="text-sm text-neutral-800 dark:text-neutral-200">
+            <p className="text-xs text-neutral-800 dark:text-neutral-200">
               <strong>Selected:</strong> {selectedShape ? selectedShape.type : 'None'}
             </p>
           </div>
