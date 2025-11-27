@@ -1,4 +1,14 @@
-import { Shape, Rectangle, Circle, Triangle, Pentagon, Hexagon, Star, Heart, Material } from './types'
+import {
+  Shape,
+  Rectangle,
+  Circle,
+  Triangle,
+  Pentagon,
+  Hexagon,
+  Star,
+  Heart,
+  Material,
+} from './types'
 
 export interface QuoteDetails {
   totalArea: number // in square meters
@@ -47,7 +57,7 @@ function calculateShapeArea(shape: Shape): number {
     case 'hexagon': {
       const hexagon = shape as Hexagon
       // Regular hexagon: area = (3*sqrt(3)/2) * side^2
-      return (3 * Math.sqrt(3) / 2) * hexagon.size * hexagon.size
+      return ((3 * Math.sqrt(3)) / 2) * hexagon.size * hexagon.size
     }
 
     case 'star': {
@@ -79,7 +89,7 @@ export function calculateQuote(shapes: Shape[], material: Material): QuoteDetail
 
   let totalAreaMm2 = 0
 
-  shapes.forEach((shape) => {
+  shapes.forEach(shape => {
     const area = calculateShapeArea(shape)
     totalAreaMm2 += area
 
@@ -130,7 +140,7 @@ export function formatQuoteForEmail(quote: QuoteDetails): string {
 
   text += 'SHAPES:\n'
   text += '-'.repeat(50) + '\n'
-  quote.shapes.forEach((shape) => {
+  quote.shapes.forEach(shape => {
     text += `${shape.type}: ${shape.count} piece(s), ${(shape.area * 1000).toFixed(2)} cm² total\n`
   })
   text += '\n'
@@ -138,7 +148,8 @@ export function formatQuoteForEmail(quote: QuoteDetails): string {
   text += `TOTAL AREA: ${(quote.totalArea * 10000).toFixed(2)} cm² (${quote.totalArea.toFixed(6)} m²)\n`
   text += `ESTIMATED COST: $${quote.materialCost.toFixed(2)}\n`
   text += '\n'
-  text += 'Note: This is an estimated cost for materials only. Final pricing may vary based on cutting complexity, quantity, and additional services.\n'
+  text +=
+    'Note: This is an estimated cost for materials only. Final pricing may vary based on cutting complexity, quantity, and additional services.\n'
 
   return text
 }

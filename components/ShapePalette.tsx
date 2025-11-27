@@ -23,7 +23,15 @@ export default function ShapePalette({ onShapeSelect, displayUnit }: ShapePalett
       label: 'Rectangle',
       icon: (
         <svg viewBox="0 0 40 40" className="w-8 h-8">
-          <rect x="5" y="10" width="30" height="20" fill="none" stroke="currentColor" strokeWidth="2" />
+          <rect
+            x="5"
+            y="10"
+            width="30"
+            height="20"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          />
         </svg>
       ),
     },
@@ -50,7 +58,12 @@ export default function ShapePalette({ onShapeSelect, displayUnit }: ShapePalett
       label: 'Pentagon',
       icon: (
         <svg viewBox="0 0 40 40" className="w-8 h-8">
-          <polygon points="20,5 35,15 30,32 10,32 5,15" fill="none" stroke="currentColor" strokeWidth="2" />
+          <polygon
+            points="20,5 35,15 30,32 10,32 5,15"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          />
         </svg>
       ),
     },
@@ -59,7 +72,12 @@ export default function ShapePalette({ onShapeSelect, displayUnit }: ShapePalett
       label: 'Hexagon',
       icon: (
         <svg viewBox="0 0 40 40" className="w-8 h-8">
-          <polygon points="20,5 32,12 32,28 20,35 8,28 8,12" fill="none" stroke="currentColor" strokeWidth="2" />
+          <polygon
+            points="20,5 32,12 32,28 20,35 8,28 8,12"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          />
         </svg>
       ),
     },
@@ -68,7 +86,12 @@ export default function ShapePalette({ onShapeSelect, displayUnit }: ShapePalett
       label: 'Star',
       icon: (
         <svg viewBox="0 0 40 40" className="w-8 h-8">
-          <polygon points="20,3 23,15 35,15 25,23 28,35 20,27 12,35 15,23 5,15 17,15" fill="none" stroke="currentColor" strokeWidth="2" />
+          <polygon
+            points="20,3 23,15 35,15 25,23 28,35 20,27 12,35 15,23 5,15 17,15"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          />
         </svg>
       ),
     },
@@ -91,7 +114,14 @@ export default function ShapePalette({ onShapeSelect, displayUnit }: ShapePalett
       label: 'Text',
       icon: (
         <svg viewBox="0 0 40 40" className="w-8 h-8">
-          <text x="10" y="28" fontFamily="Arial" fontSize="20" fill="currentColor" fontWeight="bold">
+          <text
+            x="10"
+            y="28"
+            fontFamily="Arial"
+            fontSize="20"
+            fill="currentColor"
+            fontWeight="bold"
+          >
             A
           </text>
         </svg>
@@ -114,20 +144,20 @@ export default function ShapePalette({ onShapeSelect, displayUnit }: ShapePalett
   return (
     <div className="space-y-2">
       <div className="grid grid-cols-2 gap-2">
-        {shapes.map((shape) => (
+        {shapes.map(shape => (
           <button
             key={shape.type}
             draggable
             onDragStart={() => handleDragStart(shape.type)}
             onDragEnd={handleDragEnd}
             onClick={() => handleClick(shape.type)}
-            className={`flex flex-col items-center justify-center p-3 border rounded-lg transition-all cursor-move
+            className={`flex flex-col items-center justify-center p-3 border rounded-lg transition-all cursor-move shadow-sm
               ${
                 draggedShape === shape.type
-                  ? 'border-accent-500 bg-accent-50 dark:bg-accent-900/20'
-                  : 'border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-600'
+                  ? 'border-accent-500 bg-accent-50'
+                  : 'border-neutral-300 bg-white hover:bg-neutral-50'
               }
-              text-neutral-900 dark:text-neutral-100`}
+              text-neutral-900`}
             title={`Drag to canvas or click to add ${shape.label}`}
           >
             <div className="mb-1">{shape.icon}</div>
@@ -135,7 +165,7 @@ export default function ShapePalette({ onShapeSelect, displayUnit }: ShapePalett
           </button>
         ))}
       </div>
-      <p className="text-xs text-neutral-500 dark:text-neutral-400 italic mt-2">
+      <p className="text-xs text-neutral-500 italic mt-2">
         Drag shapes to canvas or click to add at center
       </p>
     </div>

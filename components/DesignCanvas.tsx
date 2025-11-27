@@ -1,7 +1,17 @@
 'use client'
 
 import { useDesign } from '@/lib/designContext'
-import { Circle, Heart, Hexagon, Pentagon, Rectangle, Shape, Star, Text as TextShape, Triangle } from '@/lib/types'
+import {
+  Circle,
+  Heart,
+  Hexagon,
+  Pentagon,
+  Rectangle,
+  Shape,
+  Star,
+  Text as TextShape,
+  Triangle,
+} from '@/lib/types'
 import { Center, Grid, OrbitControls, Text3D } from '@react-three/drei'
 import { Canvas, ThreeEvent, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -65,10 +75,10 @@ interface Shape3DProps {
   shape: Shape
   is2DView: boolean
   setControlsEnabled: (enabled: boolean) => void
+  thickness: number
 }
 
-
-function Shape3D({ shape, is2DView, setControlsEnabled }: Shape3DProps) {
+function Shape3D({ shape, is2DView, setControlsEnabled, thickness }: Shape3DProps) {
   const { selectedShapeId, selectShape, updateShape } = useDesign()
   const { camera, raycaster, gl } = useThree()
   const [hovered, setHovered] = useState(false)
@@ -156,8 +166,9 @@ function Shape3D({ shape, is2DView, setControlsEnabled }: Shape3DProps) {
     }
   }, [isDragging, isSelected, shape, updateShape, camera, raycaster, gl, setControlsEnabled])
 
-  const color = isSelected ? '#22c55e' : hovered ? '#60a5fa' : (shape.color || '#3b82f6')
-  const yPosition = is2DView ? 0 : 0.05
+  const color = isSelected ? '#10B981' : hovered ? '#60A5FA' : shape.color || '#6B7280'
+  const depth = thickness / 10 // Convert mm to appropriate scale (2mm -> 0.2 units)
+  const yPosition = is2DView ? 0 : depth / 2
   const hasHoles = shape.holes && shape.holes.length > 0
 
   // Compute CSG geometry with holes
@@ -171,11 +182,11 @@ function Shape3D({ shape, is2DView, setControlsEnabled }: Shape3DProps) {
       // Create base shape brush
       if (shape.type === 'rectangle') {
         const rect = shape as Rectangle
-        const baseGeom = new THREE.BoxGeometry(rect.width, 0.1, rect.height)
+        const baseGeom = new THREE.BoxGeometry(rect.width, depth, rect.height)
         baseBrush = new Brush(baseGeom)
       } else if (shape.type === 'circle') {
         const circle = shape as Circle
-        const baseGeom = new THREE.CylinderGeometry(circle.radius, circle.radius, 0.1, 64)
+        const baseGeom = new THREE.CylinderGeometry(circle.radius, circle.radius, depth, 64)
         baseBrush = new Brush(baseGeom)
         baseBrush.updateMatrixWorld()
       }
@@ -216,6 +227,61 @@ function Shape3D({ shape, is2DView, setControlsEnabled }: Shape3DProps) {
     case 'rectangle': {
       const rect = shape as Rectangle
 
+      const cornerRadius = rect.cornerRadius || 0
+      const hasRoundedCorners = cornerRadius > 0 && !hasHoles
+
+      // Create rounded rectangle geometry
+      const roundedRectGeometry = useMemo(() => {
+        if (!hasRoundedCorners) return null
+
+        const width = rect.width
+        const height = rect.height
+        const radius = Math.min(cornerRadius, width / 2, height / 2) // Ensure radius doesn't exceed half dimensions
+
+        // Create a 2D shape with rounded corners
+        const shape = new THREE.Shape()
+        const x = -width / 2
+        const y = -height / 2
+
+        shape.moveTo(x + radius, y)
+        shape.lineTo(x + width - radius, y)
+        shape.quadraticCurveTo(x + width, y, x + width, y + radius)
+        shape.lineTo(x + width, y + height - radius)
+        shape.quadraticCurveTo(x + width, y + height, x + width - radius, y + height)
+        shape.lineTo(x + radius, y + height)
+        shape.quadraticCurveTo(x, y + height, x, y + height - radius)
+        shape.lineTo(x, y + radius)
+        shape.quadraticCurveTo(x, y, x + radius, y)
+
+        const extrudeSettings = {
+          depth: depth,
+          bevelEnabled: false,
+        }
+
+        const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings)
+        geometry.rotateX(-Math.PI / 2)
+        return geometry
+      }, [hasRoundedCorners, rect.width, rect.height, cornerRadius, depth])
+
+      if (hasRoundedCorners && roundedRectGeometry) {
+        return (
+          <mesh
+            position={[rect.position.x, yPosition, rect.position.y]}
+            onClick={handleClick}
+            onPointerDown={handlePointerDown}
+            onPointerOver={() => setHovered(true)}
+            onPointerOut={() => setHovered(false)}
+            geometry={roundedRectGeometry}
+          >
+            <meshStandardMaterial
+              color={color}
+              emissive={isSelected ? '#059669' : '#000000'}
+              emissiveIntensity={isSelected ? 0.2 : 0}
+            />
+          </mesh>
+        )
+      }
+
       return (
         <mesh
           position={[rect.position.x, yPosition, rect.position.y]}
@@ -225,10 +291,10 @@ function Shape3D({ shape, is2DView, setControlsEnabled }: Shape3DProps) {
           onPointerOut={() => setHovered(false)}
           geometry={geometryWithHoles || undefined}
         >
-          {!geometryWithHoles && <boxGeometry args={[rect.width, 0.1, rect.height]} />}
+          {!geometryWithHoles && <boxGeometry args={[rect.width, depth, rect.height]} />}
           <meshStandardMaterial
             color={color}
-            emissive={isSelected ? '#166534' : '#000000'}
+            emissive={isSelected ? '#059669' : '#000000'}
             emissiveIntensity={isSelected ? 0.2 : 0}
           />
         </mesh>
@@ -247,10 +313,12 @@ function Shape3D({ shape, is2DView, setControlsEnabled }: Shape3DProps) {
           onPointerOut={() => setHovered(false)}
           geometry={geometryWithHoles || undefined}
         >
-          {!geometryWithHoles && <cylinderGeometry args={[circle.radius, circle.radius, 0.1, 64]} />}
+          {!geometryWithHoles && (
+            <cylinderGeometry args={[circle.radius, circle.radius, depth, 64]} />
+          )}
           <meshStandardMaterial
             color={color}
-            emissive={isSelected ? '#166534' : '#000000'}
+            emissive={isSelected ? '#059669' : '#000000'}
             emissiveIntensity={isSelected ? 0.2 : 0}
           />
         </mesh>
@@ -260,7 +328,7 @@ function Shape3D({ shape, is2DView, setControlsEnabled }: Shape3DProps) {
     case 'triangle': {
       const triangle = shape as Triangle
       const triangleShape = createPolygonShape(3, triangle.size)
-      const extrudeSettings = { depth: 0.1, bevelEnabled: false }
+      const extrudeSettings = { depth: depth, bevelEnabled: false }
 
       return (
         <mesh
@@ -274,7 +342,7 @@ function Shape3D({ shape, is2DView, setControlsEnabled }: Shape3DProps) {
           <extrudeGeometry args={[triangleShape, extrudeSettings]} />
           <meshStandardMaterial
             color={color}
-            emissive={isSelected ? '#166534' : '#000000'}
+            emissive={isSelected ? '#059669' : '#000000'}
             emissiveIntensity={isSelected ? 0.2 : 0}
           />
         </mesh>
@@ -284,7 +352,7 @@ function Shape3D({ shape, is2DView, setControlsEnabled }: Shape3DProps) {
     case 'pentagon': {
       const pentagon = shape as Pentagon
       const pentagonShape = createPolygonShape(5, pentagon.size)
-      const extrudeSettings = { depth: 0.1, bevelEnabled: false }
+      const extrudeSettings = { depth: depth, bevelEnabled: false }
 
       return (
         <mesh
@@ -298,7 +366,7 @@ function Shape3D({ shape, is2DView, setControlsEnabled }: Shape3DProps) {
           <extrudeGeometry args={[pentagonShape, extrudeSettings]} />
           <meshStandardMaterial
             color={color}
-            emissive={isSelected ? '#166534' : '#000000'}
+            emissive={isSelected ? '#059669' : '#000000'}
             emissiveIntensity={isSelected ? 0.2 : 0}
           />
         </mesh>
@@ -308,7 +376,7 @@ function Shape3D({ shape, is2DView, setControlsEnabled }: Shape3DProps) {
     case 'hexagon': {
       const hexagon = shape as Hexagon
       const hexagonShape = createPolygonShape(6, hexagon.size)
-      const extrudeSettings = { depth: 0.1, bevelEnabled: false }
+      const extrudeSettings = { depth: depth, bevelEnabled: false }
 
       return (
         <mesh
@@ -322,7 +390,7 @@ function Shape3D({ shape, is2DView, setControlsEnabled }: Shape3DProps) {
           <extrudeGeometry args={[hexagonShape, extrudeSettings]} />
           <meshStandardMaterial
             color={color}
-            emissive={isSelected ? '#166534' : '#000000'}
+            emissive={isSelected ? '#059669' : '#000000'}
             emissiveIntensity={isSelected ? 0.2 : 0}
           />
         </mesh>
@@ -332,7 +400,7 @@ function Shape3D({ shape, is2DView, setControlsEnabled }: Shape3DProps) {
     case 'star': {
       const star = shape as Star
       const starShape = createStarShape(star.outerRadius, star.innerRadius, star.points)
-      const extrudeSettings = { depth: 0.1, bevelEnabled: false }
+      const extrudeSettings = { depth: depth, bevelEnabled: false }
 
       return (
         <mesh
@@ -346,7 +414,7 @@ function Shape3D({ shape, is2DView, setControlsEnabled }: Shape3DProps) {
           <extrudeGeometry args={[starShape, extrudeSettings]} />
           <meshStandardMaterial
             color={color}
-            emissive={isSelected ? '#166534' : '#000000'}
+            emissive={isSelected ? '#059669' : '#000000'}
             emissiveIntensity={isSelected ? 0.2 : 0}
           />
         </mesh>
@@ -356,7 +424,7 @@ function Shape3D({ shape, is2DView, setControlsEnabled }: Shape3DProps) {
     case 'heart': {
       const heart = shape as Heart
       const heartShape = createHeartShape(heart.size)
-      const extrudeSettings = { depth: 0.1, bevelEnabled: false }
+      const extrudeSettings = { depth: depth, bevelEnabled: false }
 
       return (
         <mesh
@@ -370,7 +438,7 @@ function Shape3D({ shape, is2DView, setControlsEnabled }: Shape3DProps) {
           <extrudeGeometry args={[heartShape, extrudeSettings]} />
           <meshStandardMaterial
             color={color}
-            emissive={isSelected ? '#166534' : '#000000'}
+            emissive={isSelected ? '#059669' : '#000000'}
             emissiveIntensity={isSelected ? 0.2 : 0}
           />
         </mesh>
@@ -392,7 +460,7 @@ function Shape3D({ shape, is2DView, setControlsEnabled }: Shape3DProps) {
             <Text3D
               font="/fonts/helvetiker_regular.typeface.json"
               size={text.fontSize}
-              height={0.1}
+              height={depth}
               curveSegments={12}
               bevelEnabled={false}
               rotation={[-Math.PI / 2, 0, 0]}
@@ -422,6 +490,7 @@ function Shape3D({ shape, is2DView, setControlsEnabled }: Shape3DProps) {
 interface DesignCanvasProps {
   is2DView?: boolean
   displayUnit?: 'mm' | 'cm' | 'm'
+  thickness?: number
 }
 
 function CameraController({ is2DView }: { is2DView: boolean }) {
@@ -444,7 +513,7 @@ function CameraController({ is2DView }: { is2DView: boolean }) {
   return null
 }
 
-export default function DesignCanvas({ is2DView = false, displayUnit = 'mm' }: DesignCanvasProps) {
+export default function DesignCanvas({ is2DView = false, displayUnit = 'mm', thickness = 2 }: DesignCanvasProps) {
   const { shapes, selectShape } = useDesign()
   const [controlsEnabled, setControlsEnabled] = useState(true)
 
@@ -459,19 +528,19 @@ export default function DesignCanvas({ is2DView = false, displayUnit = 'mm' }: D
   const gridSettings = {
     mm: { size: 2000, cellSize: 10, sectionSize: 100, fadeDistance: 1000 },
     cm: { size: 2000, cellSize: 100, sectionSize: 1000, fadeDistance: 1000 },
-    m: { size: 10000, cellSize: 1000, sectionSize: 10000, fadeDistance: 5000 }
+    m: { size: 10000, cellSize: 1000, sectionSize: 10000, fadeDistance: 5000 },
   }
 
   const grid = gridSettings[displayUnit]
 
   return (
-    <div className="w-full h-screen bg-neutral-200 dark:bg-neutral-900">
+    <div className="w-full h-screen bg-slate-50">
       <Canvas
         camera={{
           position: [50, 50, 50],
           fov: 60,
           near: 0.1,
-          far: 10000
+          far: 10000,
         }}
         onPointerMissed={() => selectShape(null)}
       >
@@ -487,11 +556,11 @@ export default function DesignCanvas({ is2DView = false, displayUnit = 'mm' }: D
         <Grid
           args={[grid.size, grid.size]}
           cellSize={grid.cellSize}
-          cellThickness={0.5}
-          cellColor="#6b7280"
+          cellThickness={0.8}
+          cellColor="#64748B"
           sectionSize={grid.sectionSize}
-          sectionThickness={1}
-          sectionColor="#4b5563"
+          sectionThickness={1.5}
+          sectionColor="#475569"
           fadeDistance={grid.fadeDistance}
           fadeStrength={1}
           followCamera={false}
@@ -518,12 +587,13 @@ export default function DesignCanvas({ is2DView = false, displayUnit = 'mm' }: D
         />
 
         {/* Render all shapes from design state */}
-        {shapes.map((shape) => (
+        {shapes.map(shape => (
           <Shape3D
             key={shape.id}
             shape={shape}
             is2DView={is2DView}
             setControlsEnabled={setControlsEnabled}
+            thickness={thickness}
           />
         ))}
       </Canvas>

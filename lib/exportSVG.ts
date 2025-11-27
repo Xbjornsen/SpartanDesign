@@ -9,8 +9,8 @@ export function exportToSVG(shapes: Shape[], width: number = 800, height: number
   const bounds = calculateBounds(shapes)
   const padding = 10
 
-  const viewBoxWidth = bounds.maxX - bounds.minX + (padding * 2)
-  const viewBoxHeight = bounds.maxY - bounds.minY + (padding * 2)
+  const viewBoxWidth = bounds.maxX - bounds.minX + padding * 2
+  const viewBoxHeight = bounds.maxY - bounds.minY + padding * 2
   const viewBoxX = bounds.minX - padding
   const viewBoxY = bounds.minY - padding
 
@@ -23,7 +23,7 @@ export function exportToSVG(shapes: Shape[], width: number = 800, height: number
   svgContent += `  <g id="design">\n`
 
   // Convert each shape to SVG
-  shapes.forEach((shape) => {
+  shapes.forEach(shape => {
     const shapeSVG = shapeToSVG(shape)
     if (shapeSVG) {
       svgContent += `    ${shapeSVG}\n`
@@ -79,7 +79,7 @@ function shapeToSVG(shape: Shape): string {
   }
 }
 
-function holeToSVG(hole: Hole, parentPosition: { x: number, y: number }): string {
+function holeToSVG(hole: Hole, parentPosition: { x: number; y: number }): string {
   const strokeColor = '#000000'
   const strokeWidth = 0.5
 
@@ -102,7 +102,7 @@ function calculateBounds(shapes: Shape[]) {
   let maxX = -Infinity
   let maxY = -Infinity
 
-  shapes.forEach((shape) => {
+  shapes.forEach(shape => {
     switch (shape.type) {
       case 'rectangle': {
         const rect = shape as Rectangle
@@ -126,7 +126,7 @@ function calculateBounds(shapes: Shape[]) {
 
       case 'custom': {
         const custom = shape as CustomPath
-        custom.points.forEach((point) => {
+        custom.points.forEach(point => {
           minX = Math.min(minX, point.x)
           minY = Math.min(minY, point.y)
           maxX = Math.max(maxX, point.x)

@@ -18,14 +18,11 @@ const poppins = Poppins({
 
 export const metadata = {
   title: 'Spartan Design - Laser Cutting',
-  description: 'Design custom laser cut products with our intuitive 3D designer. Professional laser cutting services for gates, flat objects, and custom designs.',
+  description:
+    'Design custom laser cut products with our intuitive 3D designer. Professional laser cutting services for gates, flat objects, and custom designs.',
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} ${poppins.variable}`}>
