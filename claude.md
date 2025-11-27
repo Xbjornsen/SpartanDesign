@@ -7,17 +7,20 @@ Building a laser cutting design platform for a laser cutting business. The goal 
 ## System Workflow
 
 **Customer Journey:**
+
 1. User designs what they want in the web interface
 2. System generates instant quote
 3. User submits design with contact details
 
 **Backend Process:**
+
 - Email sent to engineer with:
   - Customer details
   - Design file (SVG)
   - Quote breakdown
 
 **Engineer Workflow:**
+
 - Receives email notification
 - Opens file in Fusion 360 for review/editing
 - Fusion 360 exports DXF for laser cutter
@@ -26,17 +29,20 @@ Building a laser cutting design platform for a laser cutting business. The goal 
 ## Key Technical Decisions
 
 ### File Format
+
 - **Export Format**: SVG (compatible with Fusion 360)
 - **Why**: Fusion 360 handles SVG imports well, can be sketched/modified/extruded
 - **Note**: DXF export happens in Fusion 360, not in the web app
 
 ### No Python Backend
+
 - Initially considered Python scripts for SVG generation and quote calculations
 - **Decision**: React Three Fiber can handle all exports directly in browser
 - Quote calculations done in TypeScript via Next.js API routes
 - Simpler architecture, fewer dependencies
 
 ### Tech Stack
+
 - **Next.js 14**: App router, TypeScript
 - **React Three Fiber**: 3D design canvas
 - **Drei**: Three.js helpers (OrbitControls, Grid, etc.)

@@ -9,17 +9,20 @@ Spartan Design provides an intuitive interface for customers to design laser cut
 ## Workflow
 
 ### Customer Side
+
 1. **Design** - Use the 3D designer interface to create custom designs
 2. **Quote** - Get instant pricing based on material, dimensions, and complexity
 3. **Submit** - Provide customer details and submit the design
 
 ### System Process
+
 - Automatically emails engineer with:
   - Customer details
   - Design file (SVG format, Fusion 360 compatible)
   - Quote breakdown
 
 ### Engineer Side
+
 - Receives email notification
 - Opens design file in Fusion 360
 - Reviews and edits as needed
@@ -67,6 +70,7 @@ SpartanDesign/
 ## Getting Started
 
 ### Prerequisites
+
 - Node.js 18+
 - npm or yarn
 

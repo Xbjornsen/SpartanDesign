@@ -1,43 +1,45 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react'
 
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
-  const [mounted, setMounted] = useState(false);
+  const [theme, setTheme] = useState<'light' | 'dark'>('light')
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    setMounted(true);
+    setMounted(true)
     // Get current theme from localStorage or system preference
-    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
-    const systemPreference = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    const currentTheme = savedTheme || systemPreference;
-    setTheme(currentTheme);
-  }, []);
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null
+    const systemPreference = window.matchMedia('(prefers-color-scheme: dark)').matches
+      ? 'dark'
+      : 'light'
+    const currentTheme = savedTheme || systemPreference
+    setTheme(currentTheme)
+  }, [])
 
   const toggleTheme = () => {
-    const html = document.documentElement;
-    const newTheme = theme === 'light' ? 'dark' : 'light';
+    const html = document.documentElement
+    const newTheme = theme === 'light' ? 'dark' : 'light'
 
-    console.log('Toggling theme from', theme, 'to', newTheme);
+    console.log('Toggling theme from', theme, 'to', newTheme)
 
-    setTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
+    setTheme(newTheme)
+    localStorage.setItem('theme', newTheme)
 
     // Toggle the dark class
     if (newTheme === 'dark') {
-      html.classList.add('dark');
+      html.classList.add('dark')
     } else {
-      html.classList.remove('dark');
+      html.classList.remove('dark')
     }
 
-    console.log('HTML classes after toggle:', html.classList.toString());
-  };
+    console.log('HTML classes after toggle:', html.classList.toString())
+  }
 
   if (!mounted) {
     return (
       <div className="p-2 w-10 h-10 rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700" />
-    );
+    )
   }
 
   return (
@@ -78,5 +80,5 @@ export default function ThemeToggle() {
         </svg>
       )}
     </button>
-  );
+  )
 }

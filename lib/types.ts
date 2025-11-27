@@ -1,5 +1,14 @@
 // Shape types
-export type ShapeType = 'rectangle' | 'circle' | 'triangle' | 'pentagon' | 'hexagon' | 'star' | 'heart' | 'text' | 'custom'
+export type ShapeType =
+  | 'rectangle'
+  | 'circle'
+  | 'triangle'
+  | 'pentagon'
+  | 'hexagon'
+  | 'star'
+  | 'heart'
+  | 'text'
+  | 'custom'
 
 export interface Position {
   x: number
@@ -10,7 +19,7 @@ export interface Hole {
   id: string
   type: 'rectangle' | 'circle'
   position: Position // Relative to parent shape
-  width?: number  // For rectangle holes
+  width?: number // For rectangle holes
   height?: number // For rectangle holes
   radius?: number // For circle holes
 }
@@ -29,6 +38,7 @@ export interface Rectangle extends BaseShape {
   type: 'rectangle'
   width: number
   height: number
+  cornerRadius?: number // Corner radius in mm for rounded corners
 }
 
 export interface Circle extends BaseShape {
@@ -75,7 +85,16 @@ export interface CustomPath extends BaseShape {
   points: Position[]
 }
 
-export type Shape = Rectangle | Circle | Triangle | Pentagon | Hexagon | Star | Heart | Text | CustomPath
+export type Shape =
+  | Rectangle
+  | Circle
+  | Triangle
+  | Pentagon
+  | Hexagon
+  | Star
+  | Heart
+  | Text
+  | CustomPath
 
 // Material types
 export interface Material {

@@ -77,14 +77,12 @@ export default function SubmitJobModal({
     }
   }
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    setFormData(prev => ({ ...prev, [name]: value }))
     // Clear error for this field when user starts typing
     if (errors[name as keyof CustomerDetails]) {
-      setErrors((prev) => ({ ...prev, [name]: undefined }))
+      setErrors(prev => ({ ...prev, [name]: undefined }))
     }
   }
 
@@ -103,12 +101,7 @@ export default function SubmitJobModal({
               disabled={isSubmitting}
               className="text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 disabled:opacity-50"
             >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -135,15 +128,11 @@ export default function SubmitJobModal({
                 onChange={handleChange}
                 disabled={isSubmitting}
                 className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-50 ${
-                  errors.fullName
-                    ? 'border-rose-500'
-                    : 'border-neutral-300 dark:border-neutral-600'
+                  errors.fullName ? 'border-rose-500' : 'border-neutral-300 dark:border-neutral-600'
                 }`}
                 placeholder="John Doe"
               />
-              {errors.fullName && (
-                <p className="mt-1 text-sm text-rose-500">{errors.fullName}</p>
-              )}
+              {errors.fullName && <p className="mt-1 text-sm text-rose-500">{errors.fullName}</p>}
             </div>
 
             <div>
@@ -161,15 +150,11 @@ export default function SubmitJobModal({
                 onChange={handleChange}
                 disabled={isSubmitting}
                 className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-50 ${
-                  errors.email
-                    ? 'border-rose-500'
-                    : 'border-neutral-300 dark:border-neutral-600'
+                  errors.email ? 'border-rose-500' : 'border-neutral-300 dark:border-neutral-600'
                 }`}
                 placeholder="john@example.com"
               />
-              {errors.email && (
-                <p className="mt-1 text-sm text-rose-500">{errors.email}</p>
-              )}
+              {errors.email && <p className="mt-1 text-sm text-rose-500">{errors.email}</p>}
             </div>
 
             <div>
@@ -187,15 +172,11 @@ export default function SubmitJobModal({
                 onChange={handleChange}
                 disabled={isSubmitting}
                 className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-50 ${
-                  errors.phone
-                    ? 'border-rose-500'
-                    : 'border-neutral-300 dark:border-neutral-600'
+                  errors.phone ? 'border-rose-500' : 'border-neutral-300 dark:border-neutral-600'
                 }`}
                 placeholder="+1 (555) 123-4567"
               />
-              {errors.phone && (
-                <p className="mt-1 text-sm text-rose-500">{errors.phone}</p>
-              )}
+              {errors.phone && <p className="mt-1 text-sm text-rose-500">{errors.phone}</p>}
             </div>
 
             <div>

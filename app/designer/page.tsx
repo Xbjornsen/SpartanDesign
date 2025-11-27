@@ -3,9 +3,21 @@
 import { useState, useEffect } from 'react'
 import DesignCanvas from '@/components/DesignCanvas'
 import { DesignProvider, useDesign } from '@/lib/designContext'
-import { Rectangle, Circle, Triangle, Pentagon, Hexagon, Star, Heart, Text as TextShape, Material, Hole, ShapeType, Shape } from '@/lib/types'
+import {
+  Rectangle,
+  Circle,
+  Triangle,
+  Pentagon,
+  Hexagon,
+  Star,
+  Heart,
+  Text as TextShape,
+  Material,
+  Hole,
+  ShapeType,
+  Shape,
+} from '@/lib/types'
 import { exportToSVG, downloadSVG } from '@/lib/exportSVG'
-import ThemeToggle from '@/components/ThemeToggle'
 import ShapePalette from '@/components/ShapePalette'
 import SubmitJobModal, { CustomerDetails } from '@/components/SubmitJobModal'
 
@@ -20,13 +32,55 @@ const materials: Material[] = [
   { id: 'steel-6mm', name: 'Mild Steel', thickness: 6, pricePerSquareMeter: 130, unit: 'mm' },
 
   // Stainless Steel
-  { id: 'stainless-1mm', name: 'Stainless Steel', thickness: 1, pricePerSquareMeter: 65, unit: 'mm' },
-  { id: 'stainless-1.5mm', name: 'Stainless Steel', thickness: 1.5, pricePerSquareMeter: 75, unit: 'mm' },
-  { id: 'stainless-2mm', name: 'Stainless Steel', thickness: 2, pricePerSquareMeter: 85, unit: 'mm' },
-  { id: 'stainless-3mm', name: 'Stainless Steel', thickness: 3, pricePerSquareMeter: 105, unit: 'mm' },
-  { id: 'stainless-4mm', name: 'Stainless Steel', thickness: 4, pricePerSquareMeter: 125, unit: 'mm' },
-  { id: 'stainless-5mm', name: 'Stainless Steel', thickness: 5, pricePerSquareMeter: 150, unit: 'mm' },
-  { id: 'stainless-6mm', name: 'Stainless Steel', thickness: 6, pricePerSquareMeter: 175, unit: 'mm' },
+  {
+    id: 'stainless-1mm',
+    name: 'Stainless Steel',
+    thickness: 1,
+    pricePerSquareMeter: 65,
+    unit: 'mm',
+  },
+  {
+    id: 'stainless-1.5mm',
+    name: 'Stainless Steel',
+    thickness: 1.5,
+    pricePerSquareMeter: 75,
+    unit: 'mm',
+  },
+  {
+    id: 'stainless-2mm',
+    name: 'Stainless Steel',
+    thickness: 2,
+    pricePerSquareMeter: 85,
+    unit: 'mm',
+  },
+  {
+    id: 'stainless-3mm',
+    name: 'Stainless Steel',
+    thickness: 3,
+    pricePerSquareMeter: 105,
+    unit: 'mm',
+  },
+  {
+    id: 'stainless-4mm',
+    name: 'Stainless Steel',
+    thickness: 4,
+    pricePerSquareMeter: 125,
+    unit: 'mm',
+  },
+  {
+    id: 'stainless-5mm',
+    name: 'Stainless Steel',
+    thickness: 5,
+    pricePerSquareMeter: 150,
+    unit: 'mm',
+  },
+  {
+    id: 'stainless-6mm',
+    name: 'Stainless Steel',
+    thickness: 6,
+    pricePerSquareMeter: 175,
+    unit: 'mm',
+  },
 
   // Aluminium
   { id: 'aluminium-1mm', name: 'Aluminium', thickness: 1, pricePerSquareMeter: 55, unit: 'mm' },
@@ -39,7 +93,16 @@ const materials: Material[] = [
 ]
 
 function DesignerContent() {
-  const { addShape, shapes, material, setMaterial, selectedShapeId, updateShape, removeShape, selectShape } = useDesign()
+  const {
+    addShape,
+    shapes,
+    material,
+    setMaterial,
+    selectedShapeId,
+    updateShape,
+    removeShape,
+    selectShape,
+  } = useDesign()
   const [defaultWidth, setDefaultWidth] = useState(2)
   const [defaultLength, setDefaultLength] = useState(2)
   const [is2DView, setIs2DView] = useState(true)
@@ -64,28 +127,37 @@ function DesignerContent() {
   // Submit job modal states
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [submitMessage, setSubmitMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [submitMessage, setSubmitMessage] = useState<{
+    type: 'success' | 'error'
+    text: string
+  } | null>(null)
 
   // Collapsible section states
   const [isToolsCollapsed, setIsToolsCollapsed] = useState(false)
-  const [isShapeLibraryCollapsed, setIsShapeLibraryCollapsed] = useState(false)
+  const [isShapeLibraryCollapsed, setIsShapeLibraryCollapsed] = useState(true)
 
   const selectedShape = shapes.find(s => s.id === selectedShapeId)
 
   // Unit conversion functions (internal storage is always in mm)
   const toMm = (value: number, unit: 'mm' | 'cm' | 'm'): number => {
     switch (unit) {
-      case 'mm': return value
-      case 'cm': return value * 10
-      case 'm': return value * 1000
+      case 'mm':
+        return value
+      case 'cm':
+        return value * 10
+      case 'm':
+        return value * 1000
     }
   }
 
   const fromMm = (valueMm: number, unit: 'mm' | 'cm' | 'm'): number => {
     switch (unit) {
-      case 'mm': return valueMm
-      case 'cm': return valueMm / 10
-      case 'm': return valueMm / 1000
+      case 'mm':
+        return valueMm
+      case 'cm':
+        return valueMm / 10
+      case 'm':
+        return valueMm / 1000
     }
   }
 
@@ -98,7 +170,9 @@ function DesignerContent() {
   const handleMetalTypeChange = (metalType: string) => {
     setSelectedMetalType(metalType)
     // Find material with this type and current thickness, or default to first available
-    const matchingMaterial = materials.find(m => m.name === metalType && m.thickness === selectedThickness)
+    const matchingMaterial = materials.find(
+      m => m.name === metalType && m.thickness === selectedThickness
+    )
     const fallbackMaterial = materials.find(m => m.name === metalType)
     if (matchingMaterial) {
       setMaterial(matchingMaterial)
@@ -111,7 +185,9 @@ function DesignerContent() {
   // Handle thickness change
   const handleThicknessChange = (thickness: number) => {
     setSelectedThickness(thickness)
-    const matchingMaterial = materials.find(m => m.name === selectedMetalType && m.thickness === thickness)
+    const matchingMaterial = materials.find(
+      m => m.name === selectedMetalType && m.thickness === thickness
+    )
     if (matchingMaterial) {
       setMaterial(matchingMaterial)
     }
@@ -180,7 +256,7 @@ function DesignerContent() {
       position: { x: 0, y: 0 },
       width: widthMm,
       height: heightMm,
-      color: '#3b82f6',
+      color: '#6B7280',
       holes: [],
     }
     addShape(newRect)
@@ -195,7 +271,7 @@ function DesignerContent() {
       type: 'circle',
       position: { x: 0, y: 0 },
       radius: diameterMm / 2,
-      color: '#3b82f6',
+      color: '#6B7280',
       holes: [],
       locked: false,
     }
@@ -216,7 +292,7 @@ function DesignerContent() {
           position: { x: 0, y: 0 },
           width: toMm(defaultWidth, displayUnit),
           height: toMm(defaultLength, displayUnit),
-          color: '#3b82f6',
+          color: '#6B7280',
           holes: [],
           locked: false,
         } as Rectangle
@@ -228,7 +304,7 @@ function DesignerContent() {
           type: 'circle',
           position: { x: 0, y: 0 },
           radius: defaultSize / 2,
-          color: '#3b82f6',
+          color: '#6B7280',
           holes: [],
           locked: false,
         } as Circle
@@ -240,7 +316,7 @@ function DesignerContent() {
           type: 'triangle',
           position: { x: 0, y: 0 },
           size: defaultSize,
-          color: '#3b82f6',
+          color: '#6B7280',
           holes: [],
           locked: false,
         } as Triangle
@@ -252,7 +328,7 @@ function DesignerContent() {
           type: 'pentagon',
           position: { x: 0, y: 0 },
           size: defaultSize / 2,
-          color: '#3b82f6',
+          color: '#6B7280',
           holes: [],
           locked: false,
         } as Pentagon
@@ -264,7 +340,7 @@ function DesignerContent() {
           type: 'hexagon',
           position: { x: 0, y: 0 },
           size: defaultSize / 2,
-          color: '#3b82f6',
+          color: '#6B7280',
           holes: [],
           locked: false,
         } as Hexagon
@@ -278,7 +354,7 @@ function DesignerContent() {
           outerRadius: defaultSize / 2,
           innerRadius: defaultSize / 4,
           points: 5,
-          color: '#3b82f6',
+          color: '#6B7280',
           holes: [],
           locked: false,
         } as Star
@@ -290,7 +366,7 @@ function DesignerContent() {
           type: 'heart',
           position: { x: 0, y: 0 },
           size: defaultSize,
-          color: '#3b82f6',
+          color: '#6B7280',
           holes: [],
           locked: false,
         } as Heart
@@ -304,7 +380,7 @@ function DesignerContent() {
           text: 'A',
           fontSize: defaultSize,
           fontFamily: 'Arial',
-          color: '#3b82f6',
+          color: '#6B7280',
           holes: [],
           locked: false,
         } as TextShape
@@ -343,8 +419,7 @@ function DesignerContent() {
       position: { x: xMm, y: yMm },
       ...(holeType === 'rectangle'
         ? { width: toMm(newHoleWidth, displayUnit), height: toMm(newHoleHeight, displayUnit) }
-        : { radius: toMm(newHoleDiameter, displayUnit) / 2 }
-      )
+        : { radius: toMm(newHoleDiameter, displayUnit) / 2 }),
     }
 
     const updatedHoles = [...(selectedShape.holes || []), newHole]
@@ -386,7 +461,10 @@ function DesignerContent() {
 
   const handleOpenSubmitModal = () => {
     if (shapes.length === 0) {
-      setSubmitMessage({ type: 'error', text: 'Please add at least one shape to your design before submitting.' })
+      setSubmitMessage({
+        type: 'error',
+        text: 'Please add at least one shape to your design before submitting.',
+      })
       setTimeout(() => setSubmitMessage(null), 5000)
       return
     }
@@ -441,33 +519,68 @@ function DesignerContent() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-white dark:bg-neutral-900">
+    <div className="flex flex-col h-screen bg-neutral-50">
       {/* Header */}
-      <header className="bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white px-6 py-4 flex justify-between items-center shadow-sm border-b border-neutral-200 dark:border-neutral-700">
-        <h1 className="font-heading text-2xl font-bold text-neutral-900 dark:text-white">Spartan Design</h1>
-        <div className="flex gap-3 items-center">
-          <ThemeToggle />
-          <button
-            onClick={() => setIs2DView(!is2DView)}
-            className={`px-4 py-2 rounded-xl transition-all font-medium ${
-              is2DView
-                ? 'bg-gradient-to-r from-secondary-500 to-secondary-600 hover:from-secondary-600 hover:to-secondary-700 text-white shadow-md'
-                : 'bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-700 dark:hover:bg-neutral-600 text-neutral-700 dark:text-neutral-100 border border-neutral-200 dark:border-neutral-600'
-            }`}
+      <header className="bg-slate-100 border-b-2 border-blue-900 px-6 py-4 flex justify-between items-center shadow-lg">
+        <div className="flex items-center gap-4">
+          <a
+            href="/"
+            className="text-slate-700 hover:text-blue-700 transition-colors"
+            title="Back to Home"
           >
-            {is2DView ? '2D View' : '3D View'}
-          </button>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+          </a>
+          <h1 className="font-heading text-2xl font-bold text-blue-900">
+            Spartan Design <span className="text-slate-600 font-normal">| 3D Designer</span>
+          </h1>
+        </div>
+        <div className="flex gap-3 items-center">
+          {/* View Toggle */}
+          <div className="flex bg-slate-200 rounded-lg p-1 border-2 border-slate-300">
+            <button
+              onClick={() => setIs2DView(true)}
+              className={`px-4 py-2 rounded-md transition-all font-semibold ${
+                is2DView
+                  ? 'bg-slate-600 text-white shadow-md'
+                  : 'text-slate-700 hover:bg-slate-300'
+              }`}
+            >
+              2D View
+            </button>
+            <button
+              onClick={() => setIs2DView(false)}
+              className={`px-4 py-2 rounded-md transition-all font-semibold ${
+                !is2DView
+                  ? 'bg-slate-600 text-white shadow-md'
+                  : 'text-slate-700 hover:bg-slate-300'
+              }`}
+            >
+              3D View
+            </button>
+          </div>
+
+          {/* Export Button */}
           <button
             onClick={handleExportSVG}
-            className="px-4 py-2 bg-gradient-to-r from-accent-500 to-accent-600 hover:from-accent-600 hover:to-accent-700 text-white rounded-xl transition-all shadow-md font-medium"
+            className="px-4 py-2 bg-slate-500 hover:bg-slate-600 text-white rounded-lg transition-all shadow-md font-semibold flex items-center gap-2 border-2 border-slate-600"
           >
-            Export SVG
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            <span className="text-white">Export SVG</span>
           </button>
+
+          {/* Submit Job Button */}
           <button
             onClick={handleOpenSubmitModal}
-            className="px-4 py-2 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white rounded-xl transition-all shadow-md font-semibold"
+            className="px-5 py-2.5 bg-slate-700 hover:bg-slate-800 text-white rounded-lg transition-all shadow-lg font-bold flex items-center gap-2 border-2 border-slate-800"
           >
-            Submit Job
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="text-white">Submit Job</span>
           </button>
         </div>
       </header>
@@ -475,57 +588,90 @@ function DesignerContent() {
       {/* Main content */}
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar - Tools */}
-        <aside className="w-80 bg-neutral-50 dark:bg-neutral-800 px-5 py-5 overflow-y-auto border-r border-neutral-200 dark:border-neutral-700">
-          <div
-            className="flex justify-between items-center mb-4 cursor-pointer select-none p-2 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-lg transition"
-            onClick={() => setIsToolsCollapsed(!isToolsCollapsed)}
-          >
-            <h2 className="font-heading text-lg font-bold text-neutral-900 dark:text-neutral-100">Tools</h2>
-            <svg
-              className={`w-5 h-5 text-primary-600 dark:text-primary-400 transition-transform ${isToolsCollapsed ? '-rotate-90' : ''}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </div>
-          {!isToolsCollapsed && (
-            <div className="space-y-2">
-              <button
-                onClick={handleAddRectangle}
-                className="w-full px-4 py-2.5 bg-white dark:bg-neutral-700 border-2 border-primary-200 dark:border-primary-700 rounded-lg hover:border-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition text-neutral-900 dark:text-neutral-100 font-medium"
-              >
-                + Rectangle
-              </button>
-              <button
-                onClick={handleAddCircle}
-                className="w-full px-4 py-2.5 bg-white dark:bg-neutral-700 border-2 border-primary-200 dark:border-primary-700 rounded-lg hover:border-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition text-neutral-900 dark:text-neutral-100 font-medium"
-              >
-                + Circle
-              </button>
-              <button
-                disabled
-                className="w-full px-4 py-2.5 bg-neutral-100 dark:bg-neutral-800 border-2 border-neutral-200 dark:border-neutral-700 rounded-lg cursor-not-allowed text-neutral-400 dark:text-neutral-500"
-              >
-                + Custom Path (Soon)
-              </button>
-            </div>
-          )}
-
-          <div className="mt-8">
+        <aside className="w-80 bg-white px-5 py-5 overflow-y-auto border-r-2 border-neutral-200 shadow-lg">
+          {/* Quick Add Tools Section */}
+          <div className="mb-6">
             <div
-              className="flex justify-between items-center mb-4 cursor-pointer select-none"
-              onClick={() => setIsShapeLibraryCollapsed(!isShapeLibraryCollapsed)}
+              className="flex justify-between items-center mb-3 cursor-pointer select-none p-2 hover:bg-neutral-50 rounded-lg transition"
+              onClick={() => setIsToolsCollapsed(!isToolsCollapsed)}
             >
-              <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Shape Library</h2>
+              <h2 className="font-heading text-lg font-bold text-neutral-900 flex items-center gap-2">
+                <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                </svg>
+                Quick Add
+              </h2>
               <svg
-                className={`w-5 h-5 text-neutral-600 dark:text-neutral-400 transition-transform ${isShapeLibraryCollapsed ? '-rotate-90' : ''}`}
+                className={`w-5 h-5 text-primary-600 transition-transform ${isToolsCollapsed ? '-rotate-90' : ''}`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </div>
+            {!isToolsCollapsed && (
+              <div className="space-y-2">
+                <button
+                  onClick={handleAddRectangle}
+                  className="w-full px-4 py-3 bg-white hover:bg-slate-50 border-2 border-slate-300 hover:border-slate-400 rounded-lg transition-all text-slate-800 font-semibold shadow-sm flex items-center gap-2"
+                >
+                  <svg className="w-5 h-5 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <rect x="4" y="4" width="16" height="16" strokeWidth={2} rx="2" />
+                  </svg>
+                  <span className="text-slate-800">Add Rectangle</span>
+                </button>
+                <button
+                  onClick={handleAddCircle}
+                  className="w-full px-4 py-3 bg-white hover:bg-slate-50 border-2 border-slate-300 hover:border-slate-400 rounded-lg transition-all text-slate-800 font-semibold shadow-sm flex items-center gap-2"
+                >
+                  <svg className="w-5 h-5 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="8" strokeWidth={2} />
+                  </svg>
+                  <span className="text-slate-800">Add Circle</span>
+                </button>
+                <button
+                  disabled
+                  className="w-full px-4 py-3 bg-slate-100 border-2 border-slate-300 rounded-lg cursor-not-allowed text-slate-500 font-medium flex items-center gap-2 opacity-60"
+                >
+                  <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                  </svg>
+                  <span className="text-slate-500">Custom Path (Soon)</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Shape Library Section */}
+          <div className="mb-6">
+            <div
+              className="flex justify-between items-center mb-3 cursor-pointer select-none p-2 hover:bg-neutral-50 rounded-lg transition"
+              onClick={() => setIsShapeLibraryCollapsed(!isShapeLibraryCollapsed)}
+            >
+              <h2 className="font-heading text-lg font-bold text-neutral-900 flex items-center gap-2">
+                <svg className="w-5 h-5 text-accent-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                Shape Library
+              </h2>
+              <svg
+                className={`w-5 h-5 text-accent-600 transition-transform ${isShapeLibraryCollapsed ? '-rotate-90' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
               </svg>
             </div>
             {!isShapeLibraryCollapsed && (
@@ -533,48 +679,57 @@ function DesignerContent() {
             )}
           </div>
 
-          <h2 className="text-lg font-semibold mt-8 mb-4 text-neutral-900 dark:text-neutral-100">Metal Type</h2>
+          <h2 className="font-heading text-lg font-bold mb-3 text-neutral-900 flex items-center gap-2">
+            <svg className="w-5 h-5 text-secondary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+            </svg>
+            Material Selection
+          </h2>
           <div className="space-y-2">
-            <label className="flex items-center p-3 border border-neutral-300 dark:border-neutral-600 rounded-lg cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-700 transition bg-white dark:bg-neutral-700">
+            <label className="flex items-center p-3 border border-neutral-300 rounded-lg cursor-pointer hover:bg-neutral-50 transition bg-white shadow-sm">
               <input
                 type="radio"
                 name="metalType"
                 value="Mild Steel"
                 checked={selectedMetalType === 'Mild Steel'}
-                onChange={(e) => handleMetalTypeChange(e.target.value)}
+                onChange={e => handleMetalTypeChange(e.target.value)}
                 className="mr-3 w-4 h-4 accent-primary-500"
               />
-              <span className="font-medium text-neutral-900 dark:text-neutral-100">Mild Steel</span>
+              <span className="font-medium text-neutral-900">Mild Steel</span>
             </label>
-            <label className="flex items-center p-3 border border-neutral-300 dark:border-neutral-600 rounded-lg cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-700 transition bg-white dark:bg-neutral-700">
+            <label className="flex items-center p-3 border border-neutral-300 rounded-lg cursor-pointer hover:bg-neutral-50 transition bg-white shadow-sm">
               <input
                 type="radio"
                 name="metalType"
                 value="Stainless Steel"
                 checked={selectedMetalType === 'Stainless Steel'}
-                onChange={(e) => handleMetalTypeChange(e.target.value)}
+                onChange={e => handleMetalTypeChange(e.target.value)}
                 className="mr-3 w-4 h-4 accent-primary-500"
               />
-              <span className="font-medium text-neutral-900 dark:text-neutral-100">Stainless Steel</span>
+              <span className="font-medium text-neutral-900">
+                Stainless Steel
+              </span>
             </label>
-            <label className="flex items-center p-3 border border-neutral-300 dark:border-neutral-600 rounded-lg cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-700 transition bg-white dark:bg-neutral-700">
+            <label className="flex items-center p-3 border border-neutral-300 rounded-lg cursor-pointer hover:bg-neutral-50 transition bg-white shadow-sm">
               <input
                 type="radio"
                 name="metalType"
                 value="Aluminium"
                 checked={selectedMetalType === 'Aluminium'}
-                onChange={(e) => handleMetalTypeChange(e.target.value)}
+                onChange={e => handleMetalTypeChange(e.target.value)}
                 className="mr-3 w-4 h-4 accent-primary-500"
               />
-              <span className="font-medium text-neutral-900 dark:text-neutral-100">Aluminium</span>
+              <span className="font-medium text-neutral-900">Aluminium</span>
             </label>
           </div>
 
-          <h2 className="text-lg font-semibold mt-6 mb-4 text-neutral-900 dark:text-neutral-100">Thickness</h2>
+          <h2 className="text-lg font-semibold mt-6 mb-4 text-neutral-900">
+            Thickness
+          </h2>
           <select
             value={selectedThickness}
-            onChange={(e) => handleThicknessChange(parseFloat(e.target.value))}
-            className="w-full px-4 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
+            onChange={e => handleThicknessChange(parseFloat(e.target.value))}
+            className="w-full px-4 py-2 border border-neutral-300 rounded-lg bg-white text-neutral-900 shadow-sm"
           >
             {availableThicknesses.map(thickness => {
               return (
@@ -585,68 +740,87 @@ function DesignerContent() {
             })}
           </select>
 
-          <div className="mt-3 p-3 bg-accent-50 dark:bg-accent-900/20 rounded-lg border border-accent-200 dark:border-accent-700">
-            <p className="text-sm text-neutral-800 dark:text-neutral-200">
+          <div className="mt-3 p-3 bg-accent-50 rounded-lg border border-accent-200">
+            <p className="text-sm text-neutral-800">
               <strong>Selected:</strong> {material.name} {material.thickness}mm
             </p>
           </div>
 
-          <h2 className="text-lg font-semibold mt-8 mb-4 text-neutral-900 dark:text-neutral-100">Units</h2>
+          <h2 className="font-heading text-lg font-bold mt-6 mb-3 text-neutral-900 flex items-center gap-2">
+            <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+            </svg>
+            Units
+          </h2>
           <div className="flex gap-2">
             <button
               onClick={() => setDisplayUnit('mm')}
-              className={`flex-1 px-3 py-2 rounded-lg border transition ${
+              className={`flex-1 px-3 py-2 rounded-lg border transition shadow-sm font-semibold ${
                 displayUnit === 'mm'
-                  ? 'bg-accent-500 text-white border-accent-500'
-                  : 'bg-white dark:bg-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-600 border-neutral-300 dark:border-neutral-600 text-neutral-900 dark:text-neutral-100'
+                  ? 'bg-slate-600 text-white border-slate-700'
+                  : 'bg-white hover:bg-slate-50 border-slate-300 text-slate-900'
               }`}
             >
               mm
             </button>
             <button
               onClick={() => setDisplayUnit('cm')}
-              className={`flex-1 px-3 py-2 rounded-lg border transition ${
+              className={`flex-1 px-3 py-2 rounded-lg border transition shadow-sm font-semibold ${
                 displayUnit === 'cm'
-                  ? 'bg-accent-500 text-white border-accent-500'
-                  : 'bg-white dark:bg-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-600 border-neutral-300 dark:border-neutral-600 text-neutral-900 dark:text-neutral-100'
+                  ? 'bg-slate-600 text-white border-slate-700'
+                  : 'bg-white hover:bg-slate-50 border-slate-300 text-slate-900'
               }`}
             >
               cm
             </button>
             <button
               onClick={() => setDisplayUnit('m')}
-              className={`flex-1 px-3 py-2 rounded-lg border transition ${
+              className={`flex-1 px-3 py-2 rounded-lg border transition shadow-sm font-semibold ${
                 displayUnit === 'm'
-                  ? 'bg-accent-500 text-white border-accent-500'
-                  : 'bg-white dark:bg-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-600 border-neutral-300 dark:border-neutral-600 text-neutral-900 dark:text-neutral-100'
+                  ? 'bg-slate-600 text-white border-slate-700'
+                  : 'bg-white hover:bg-slate-50 border-slate-300 text-slate-900'
               }`}
             >
               m
             </button>
           </div>
 
-          <h2 className="text-lg font-semibold mt-8 mb-4 text-neutral-900 dark:text-neutral-100">
-            {selectedShape ? (selectedShape.type === 'text' ? 'Edit Text' : 'Edit Shape Dimensions') : 'New Shape Dimensions'}
+          <h2 className="font-heading text-lg font-bold mt-6 mb-3 text-neutral-900 flex items-center gap-2">
+            <svg className="w-5 h-5 text-accent-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            {selectedShape
+              ? selectedShape.type === 'text'
+                ? 'Edit Text'
+                : 'Edit Dimensions'
+              : 'New Shape Size'}
           </h2>
           {selectedShape?.type === 'text' ? (
             <div className="space-y-2">
               <div>
-                <label className="block text-sm mb-1 font-medium text-neutral-900 dark:text-neutral-100">Text Content</label>
+                <label className="block text-sm mb-1 font-medium text-neutral-900">
+                  Text Content
+                </label>
                 <input
                   type="text"
                   value={textContent}
-                  onChange={(e) => handleTextContentChange(e.target.value)}
-                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-accent-500 bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
+                  onChange={e => handleTextContentChange(e.target.value)}
+                  className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-accent-500 bg-white text-neutral-900 shadow-sm"
                   placeholder="Enter text..."
                 />
               </div>
               <div>
-                <label className="block text-sm mb-1 font-medium text-neutral-900 dark:text-neutral-100">Font Size ({displayUnit})</label>
+                <label className="block text-sm mb-1 font-medium text-neutral-900">
+                  Font Size ({displayUnit})
+                </label>
                 <input
                   type="number"
                   value={textFontSize}
-                  onChange={(e) => handleTextFontSizeChange(parseFloat(e.target.value) || 1)}
-                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-accent-500 bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
+                  onChange={e => {
+                    const val = parseFloat(e.target.value)
+                    if (!isNaN(val) && val > 0) handleTextFontSizeChange(val)
+                  }}
+                  className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-accent-500 bg-white text-neutral-900 shadow-sm"
                   placeholder="10"
                   step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.1' : '1'}
                   min={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.1' : '1'}
@@ -656,14 +830,19 @@ function DesignerContent() {
           ) : (
             <div className="space-y-2">
               <div>
-                <label className="block text-sm mb-1 font-medium text-neutral-900 dark:text-neutral-100">
-                  {selectedShape?.type === 'circle' ? `Diameter (${displayUnit})` : `Width (${displayUnit})`}
+                <label className="block text-sm mb-1 font-medium text-neutral-900">
+                  {selectedShape?.type === 'circle'
+                    ? `Diameter (${displayUnit})`
+                    : `Width (${displayUnit})`}
                 </label>
                 <input
                   type="number"
                   value={defaultWidth}
-                  onChange={(e) => handleWidthChange(parseFloat(e.target.value) || 0)}
-                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-accent-500 bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
+                  onChange={e => {
+                    const val = parseFloat(e.target.value)
+                    if (!isNaN(val)) handleWidthChange(val)
+                  }}
+                  className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-accent-500 bg-white text-neutral-900 shadow-sm"
                   placeholder="2"
                   step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
                   min={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
@@ -671,30 +850,66 @@ function DesignerContent() {
               </div>
               {selectedShape?.type !== 'circle' && (
                 <div>
-                  <label className="block text-sm mb-1 font-medium text-neutral-900 dark:text-neutral-100">Length ({displayUnit})</label>
+                  <label className="block text-sm mb-1 font-medium text-neutral-900">
+                    Length ({displayUnit})
+                  </label>
                   <input
                     type="number"
                     value={defaultLength}
-                    onChange={(e) => handleLengthChange(parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-accent-500 bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
+                    onChange={e => {
+                      const val = parseFloat(e.target.value)
+                      if (!isNaN(val)) handleLengthChange(val)
+                    }}
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-accent-500 bg-white text-neutral-900 shadow-sm"
                     placeholder="2"
                     step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
                     min={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
                   />
                 </div>
               )}
+              {selectedShape?.type === 'rectangle' && (
+                <div>
+                  <label className="block text-sm mb-1 font-medium text-neutral-900">
+                    Corner Radius ({displayUnit})
+                  </label>
+                  <input
+                    type="number"
+                    value={fromMm((selectedShape as any).cornerRadius || 0, displayUnit)}
+                    onChange={e => {
+                      const val = parseFloat(e.target.value)
+                      if (!isNaN(val) && selectedShape) {
+                        updateShape(selectedShape.id, {
+                          cornerRadius: toMm(val, displayUnit)
+                        })
+                      }
+                    }}
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-accent-500 bg-white text-neutral-900 shadow-sm"
+                    placeholder="0"
+                    step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
+                    min="0"
+                  />
+                  <p className="text-xs text-neutral-500 mt-1 italic">
+                    0 = sharp corners, higher = rounder
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
           {!selectedShape && (
-            <p className="mt-2 text-xs text-neutral-500 dark:text-neutral-400 italic">
+            <p className="mt-2 text-xs text-neutral-500 italic">
               Set dimensions, then click + Rectangle or + Circle to create a shape
             </p>
           )}
 
           {selectedShape && (
             <>
-              <h2 className="text-lg font-semibold mt-8 mb-4 text-neutral-900 dark:text-neutral-100">Shape Actions</h2>
+              <h2 className="font-heading text-lg font-bold mt-6 mb-3 text-neutral-900 flex items-center gap-2">
+                <svg className="w-5 h-5 text-secondary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Shape Actions
+              </h2>
               <div className="space-y-2">
                 <button
                   onClick={handleToggleLock}
@@ -714,22 +929,27 @@ function DesignerContent() {
                 </button>
               </div>
 
-              <h2 className="text-lg font-semibold mt-8 mb-4 text-neutral-900 dark:text-neutral-100">
-                Add New Hole
+              <h2 className="font-heading text-lg font-bold mt-6 mb-3 text-neutral-900 flex items-center gap-2">
+                <svg className="w-5 h-5 text-accent-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Add Hole
               </h2>
-              <div className="space-y-3 p-3 bg-neutral-50 dark:bg-neutral-900/50 rounded-lg border border-neutral-300 dark:border-neutral-700">
+              <div className="space-y-3 p-3 bg-neutral-50 rounded-lg border border-neutral-300 shadow-sm">
                 <div>
-                  <label className="block text-xs mb-1 font-medium text-neutral-900 dark:text-neutral-100">Hole Type</label>
+                  <label className="block text-xs mb-1 font-medium text-neutral-900">
+                    Hole Type
+                  </label>
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleAddHole('circle')}
-                      className="flex-1 px-3 py-2 bg-secondary-400 hover:bg-secondary-500 text-white rounded-lg text-sm transition shadow-sm"
+                      className="flex-1 px-3 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg text-sm transition shadow-sm font-semibold"
                     >
                       + Circle
                     </button>
                     <button
                       onClick={() => handleAddHole('rectangle')}
-                      className="flex-1 px-3 py-2 bg-secondary-400 hover:bg-secondary-500 text-white rounded-lg text-sm transition shadow-sm"
+                      className="flex-1 px-3 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg text-sm transition shadow-sm font-semibold"
                     >
                       + Rectangle
                     </button>
@@ -738,40 +958,49 @@ function DesignerContent() {
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-xs mb-1 font-medium text-neutral-900 dark:text-neutral-100">
+                    <label className="block text-xs mb-1 font-medium text-neutral-900">
                       Circle Ø ({displayUnit})
                     </label>
                     <input
                       type="number"
                       value={newHoleDiameter}
-                      onChange={(e) => setNewHoleDiameter(parseFloat(e.target.value) || 0)}
-                      className="w-full px-2 py-1 border border-neutral-300 dark:border-neutral-600 rounded-lg text-sm bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
+                      onChange={e => {
+                        const val = parseFloat(e.target.value)
+                        if (!isNaN(val)) setNewHoleDiameter(val)
+                      }}
+                      className="w-full px-2 py-1 border border-neutral-300 rounded-lg text-sm bg-white text-neutral-900"
                       step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
                       min={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
                     />
                   </div>
                   <div>
-                    <label className="block text-xs mb-1 font-medium text-neutral-900 dark:text-neutral-100">
+                    <label className="block text-xs mb-1 font-medium text-neutral-900">
                       Rect W ({displayUnit})
                     </label>
                     <input
                       type="number"
                       value={newHoleWidth}
-                      onChange={(e) => setNewHoleWidth(parseFloat(e.target.value) || 0)}
-                      className="w-full px-2 py-1 border border-neutral-300 dark:border-neutral-600 rounded-lg text-sm bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
+                      onChange={e => {
+                        const val = parseFloat(e.target.value)
+                        if (!isNaN(val)) setNewHoleWidth(val)
+                      }}
+                      className="w-full px-2 py-1 border border-neutral-300 rounded-lg text-sm bg-white text-neutral-900"
                       step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
                       min={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
                     />
                   </div>
                   <div className="col-span-2">
-                    <label className="block text-xs mb-1 font-medium text-neutral-900 dark:text-neutral-100">
+                    <label className="block text-xs mb-1 font-medium text-neutral-900">
                       Rect H ({displayUnit})
                     </label>
                     <input
                       type="number"
                       value={newHoleHeight}
-                      onChange={(e) => setNewHoleHeight(parseFloat(e.target.value) || 0)}
-                      className="w-full px-2 py-1 border border-neutral-300 dark:border-neutral-600 rounded-lg text-sm bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
+                      onChange={e => {
+                        const val = parseFloat(e.target.value)
+                        if (!isNaN(val)) setNewHoleHeight(val)
+                      }}
+                      className="w-full px-2 py-1 border border-neutral-300 rounded-lg text-sm bg-white text-neutral-900"
                       step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
                       min={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
                     />
@@ -780,46 +1009,58 @@ function DesignerContent() {
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-xs mb-1 font-medium text-neutral-900 dark:text-neutral-100">
+                    <label className="block text-xs mb-1 font-medium text-neutral-900">
                       Position X ({displayUnit})
                     </label>
                     <input
                       type="number"
                       value={newHoleX}
-                      onChange={(e) => setNewHoleX(parseFloat(e.target.value) || 0)}
-                      className="w-full px-2 py-1 border border-neutral-300 dark:border-neutral-600 rounded-lg text-sm bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
+                      onChange={e => {
+                        const val = parseFloat(e.target.value)
+                        if (!isNaN(val)) setNewHoleX(val)
+                      }}
+                      className="w-full px-2 py-1 border border-neutral-300 rounded-lg text-sm bg-white text-neutral-900"
                       step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
                     />
                   </div>
                   <div>
-                    <label className="block text-xs mb-1 font-medium text-neutral-900 dark:text-neutral-100">
+                    <label className="block text-xs mb-1 font-medium text-neutral-900">
                       Position Y ({displayUnit})
                     </label>
                     <input
                       type="number"
                       value={newHoleY}
-                      onChange={(e) => setNewHoleY(parseFloat(e.target.value) || 0)}
-                      className="w-full px-2 py-1 border border-neutral-300 dark:border-neutral-600 rounded-lg text-sm bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
+                      onChange={e => {
+                        const val = parseFloat(e.target.value)
+                        if (!isNaN(val)) setNewHoleY(val)
+                      }}
+                      className="w-full px-2 py-1 border border-neutral-300 rounded-lg text-sm bg-white text-neutral-900"
                       step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
                     />
                   </div>
                 </div>
 
-                <p className="text-xs text-neutral-500 dark:text-neutral-400 italic">
+                <p className="text-xs text-neutral-500 italic">
                   Position is relative to shape center (0,0)
                 </p>
               </div>
 
               {selectedShape.holes && selectedShape.holes.length > 0 && (
                 <>
-                  <h2 className="text-lg font-semibold mt-8 mb-4 text-neutral-900 dark:text-neutral-100">
-                    Existing Holes ({selectedShape.holes.length})
+                  <h2 className="font-heading text-lg font-bold mt-6 mb-3 text-neutral-900 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-secondary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Holes ({selectedShape.holes.length})
                   </h2>
                   <div className="space-y-2">
                     {selectedShape.holes.map((hole, index) => (
-                      <div key={hole.id} className="p-3 bg-neutral-50 dark:bg-neutral-900/50 rounded-lg border border-neutral-300 dark:border-neutral-700">
+                      <div
+                        key={hole.id}
+                        className="p-3 bg-neutral-50 rounded-lg border border-neutral-300 shadow-sm"
+                      >
                         <div className="flex justify-between items-start mb-2">
-                          <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                          <span className="text-sm font-medium text-neutral-900">
                             {hole.type === 'circle' ? 'Circle' : 'Rectangle'} Hole {index + 1}
                           </span>
                           <button
@@ -834,76 +1075,153 @@ function DesignerContent() {
                           <div className="space-y-2">
                             {hole.type === 'circle' ? (
                               <div>
-                                <label className="block text-xs mb-1 text-neutral-900 dark:text-neutral-100">Diameter ({displayUnit})</label>
+                                <label className="block text-xs mb-1 text-neutral-900">
+                                  Diameter ({displayUnit})
+                                </label>
                                 <input
                                   type="number"
                                   value={hole.radius ? fromMm(hole.radius * 2, displayUnit) : 0}
-                                  onChange={(e) => {
-                                    const diameterMm = toMm(parseFloat(e.target.value) || 0, displayUnit)
-                                    handleUpdateHole(hole.id, { radius: diameterMm / 2 })
+                                  onChange={e => {
+                                    const val = parseFloat(e.target.value)
+                                    if (!isNaN(val)) {
+                                      const diameterMm = toMm(val, displayUnit)
+                                      handleUpdateHole(hole.id, { radius: diameterMm / 2 })
+                                    }
                                   }}
-                                  className="w-full px-2 py-1 border border-neutral-300 dark:border-neutral-600 rounded-lg text-sm bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
-                                  step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
-                                  min={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
+                                  className="w-full px-2 py-1 border border-neutral-300 rounded-lg text-sm bg-white text-neutral-900"
+                                  step={
+                                    displayUnit === 'm'
+                                      ? '0.001'
+                                      : displayUnit === 'cm'
+                                        ? '0.01'
+                                        : '0.1'
+                                  }
+                                  min={
+                                    displayUnit === 'm'
+                                      ? '0.001'
+                                      : displayUnit === 'cm'
+                                        ? '0.01'
+                                        : '0.1'
+                                  }
                                 />
                               </div>
                             ) : (
                               <>
                                 <div>
-                                  <label className="block text-xs mb-1 text-neutral-900 dark:text-neutral-100">Width ({displayUnit})</label>
+                                  <label className="block text-xs mb-1 text-neutral-900">
+                                    Width ({displayUnit})
+                                  </label>
                                   <input
                                     type="number"
                                     value={fromMm(hole.width || 0, displayUnit)}
-                                    onChange={(e) => {
-                                      const widthMm = toMm(parseFloat(e.target.value) || 0, displayUnit)
-                                      handleUpdateHole(hole.id, { width: widthMm })
+                                    onChange={e => {
+                                      const val = parseFloat(e.target.value)
+                                      if (!isNaN(val)) {
+                                        const widthMm = toMm(val, displayUnit)
+                                        handleUpdateHole(hole.id, { width: widthMm })
+                                      }
                                     }}
-                                    className="w-full px-2 py-1 border border-neutral-300 dark:border-neutral-600 rounded-lg text-sm bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
-                                    step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
-                                    min={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
+                                    className="w-full px-2 py-1 border border-neutral-300 rounded-lg text-sm bg-white text-neutral-900"
+                                    step={
+                                      displayUnit === 'm'
+                                        ? '0.001'
+                                        : displayUnit === 'cm'
+                                          ? '0.01'
+                                          : '0.1'
+                                    }
+                                    min={
+                                      displayUnit === 'm'
+                                        ? '0.001'
+                                        : displayUnit === 'cm'
+                                          ? '0.01'
+                                          : '0.1'
+                                    }
                                   />
                                 </div>
                                 <div>
-                                  <label className="block text-xs mb-1 text-neutral-900 dark:text-neutral-100">Height ({displayUnit})</label>
+                                  <label className="block text-xs mb-1 text-neutral-900">
+                                    Height ({displayUnit})
+                                  </label>
                                   <input
                                     type="number"
                                     value={fromMm(hole.height || 0, displayUnit)}
-                                    onChange={(e) => {
-                                      const heightMm = toMm(parseFloat(e.target.value) || 0, displayUnit)
-                                      handleUpdateHole(hole.id, { height: heightMm })
+                                    onChange={e => {
+                                      const val = parseFloat(e.target.value)
+                                      if (!isNaN(val)) {
+                                        const heightMm = toMm(val, displayUnit)
+                                        handleUpdateHole(hole.id, { height: heightMm })
+                                      }
                                     }}
-                                    className="w-full px-2 py-1 border border-neutral-300 dark:border-neutral-600 rounded-lg text-sm bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
-                                    step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
-                                    min={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
+                                    className="w-full px-2 py-1 border border-neutral-300 rounded-lg text-sm bg-white text-neutral-900"
+                                    step={
+                                      displayUnit === 'm'
+                                        ? '0.001'
+                                        : displayUnit === 'cm'
+                                          ? '0.01'
+                                          : '0.1'
+                                    }
+                                    min={
+                                      displayUnit === 'm'
+                                        ? '0.001'
+                                        : displayUnit === 'cm'
+                                          ? '0.01'
+                                          : '0.1'
+                                    }
                                   />
                                 </div>
                               </>
                             )}
                             <div className="grid grid-cols-2 gap-2">
                               <div>
-                                <label className="block text-xs mb-1 text-neutral-900 dark:text-neutral-100">Position X ({displayUnit})</label>
+                                <label className="block text-xs mb-1 text-neutral-900">
+                                  Position X ({displayUnit})
+                                </label>
                                 <input
                                   type="number"
                                   value={fromMm(hole.position.x, displayUnit)}
-                                  onChange={(e) => {
-                                    const xMm = toMm(parseFloat(e.target.value) || 0, displayUnit)
-                                    handleUpdateHole(hole.id, { position: { ...hole.position, x: xMm } })
+                                  onChange={e => {
+                                    const val = parseFloat(e.target.value)
+                                    if (!isNaN(val)) {
+                                      const xMm = toMm(val, displayUnit)
+                                      handleUpdateHole(hole.id, {
+                                        position: { ...hole.position, x: xMm },
+                                      })
+                                    }
                                   }}
-                                  className="w-full px-2 py-1 border border-neutral-300 dark:border-neutral-600 rounded-lg text-sm bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
-                                  step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
+                                  className="w-full px-2 py-1 border border-neutral-300 rounded-lg text-sm bg-white text-neutral-900"
+                                  step={
+                                    displayUnit === 'm'
+                                      ? '0.001'
+                                      : displayUnit === 'cm'
+                                        ? '0.01'
+                                        : '0.1'
+                                  }
                                 />
                               </div>
                               <div>
-                                <label className="block text-xs mb-1 text-neutral-900 dark:text-neutral-100">Position Y ({displayUnit})</label>
+                                <label className="block text-xs mb-1 text-neutral-900">
+                                  Position Y ({displayUnit})
+                                </label>
                                 <input
                                   type="number"
                                   value={fromMm(hole.position.y, displayUnit)}
-                                  onChange={(e) => {
-                                    const yMm = toMm(parseFloat(e.target.value) || 0, displayUnit)
-                                    handleUpdateHole(hole.id, { position: { ...hole.position, y: yMm } })
+                                  onChange={e => {
+                                    const val = parseFloat(e.target.value)
+                                    if (!isNaN(val)) {
+                                      const yMm = toMm(val, displayUnit)
+                                      handleUpdateHole(hole.id, {
+                                        position: { ...hole.position, y: yMm },
+                                      })
+                                    }
                                   }}
-                                  className="w-full px-2 py-1 border border-neutral-300 dark:border-neutral-600 rounded-lg text-sm bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
-                                  step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
+                                  className="w-full px-2 py-1 border border-neutral-300 rounded-lg text-sm bg-white text-neutral-900"
+                                  step={
+                                    displayUnit === 'm'
+                                      ? '0.001'
+                                      : displayUnit === 'cm'
+                                        ? '0.01'
+                                        : '0.1'
+                                  }
                                 />
                               </div>
                             </div>
@@ -916,13 +1234,14 @@ function DesignerContent() {
                           </div>
                         ) : (
                           <div>
-                            <p className="text-xs text-neutral-700 dark:text-neutral-300">
+                            <p className="text-xs text-neutral-700">
                               {hole.type === 'circle'
                                 ? `Ø ${hole.radius ? fromMm(hole.radius * 2, displayUnit).toFixed(2) : 0}${displayUnit}`
                                 : `${fromMm(hole.width || 0, displayUnit).toFixed(2)} × ${fromMm(hole.height || 0, displayUnit).toFixed(2)}${displayUnit}`}
                             </p>
-                            <p className="text-xs text-neutral-700 dark:text-neutral-300">
-                              Position: ({fromMm(hole.position.x, displayUnit).toFixed(2)}, {fromMm(hole.position.y, displayUnit).toFixed(2)}){displayUnit}
+                            <p className="text-xs text-neutral-700">
+                              Position: ({fromMm(hole.position.x, displayUnit).toFixed(2)},{' '}
+                              {fromMm(hole.position.y, displayUnit).toFixed(2)}){displayUnit}
                             </p>
                             <button
                               onClick={() => setEditingHoleId(hole.id)}
@@ -940,19 +1259,32 @@ function DesignerContent() {
             </>
           )}
 
-          <div className="mt-8 p-3 bg-accent-50 dark:bg-accent-900/20 rounded-lg border border-accent-200 dark:border-accent-700">
-            <p className="text-sm text-neutral-800 dark:text-neutral-200">
-              <strong>Shapes:</strong> {shapes.length}
-            </p>
-            <p className="text-sm text-neutral-800 dark:text-neutral-200">
-              <strong>Selected:</strong> {selectedShape ? selectedShape.type : 'None'}
-            </p>
+          <div className="mt-6 p-4 bg-gradient-to-br from-primary-50 to-accent-50 rounded-lg border-2 border-primary-200 shadow-sm">
+            <h3 className="font-bold text-sm text-neutral-900 mb-2 flex items-center gap-2">
+              <svg className="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Design Info
+            </h3>
+            <div className="space-y-1 text-sm text-neutral-700">
+              <p>
+                <strong>Shapes:</strong> {shapes.length}
+              </p>
+              <p>
+                <strong>Selected:</strong> {selectedShape ? selectedShape.type : 'None'}
+              </p>
+              {selectedShape && selectedShape.locked && (
+                <p className="text-amber-700 font-medium flex items-center gap-1">
+                  🔒 Shape Locked
+                </p>
+              )}
+            </div>
           </div>
         </aside>
 
         {/* Canvas area */}
         <main className="flex-1">
-          <DesignCanvas is2DView={is2DView} displayUnit={displayUnit} />
+          <DesignCanvas is2DView={is2DView} displayUnit={displayUnit} thickness={material.thickness} />
         </main>
       </div>
 
@@ -977,12 +1309,7 @@ function DesignerContent() {
             <div className="flex items-start gap-3">
               <div className="flex-shrink-0">
                 {submitMessage.type === 'success' ? (
-                  <svg
-                    className="w-6 h-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -991,12 +1318,7 @@ function DesignerContent() {
                     />
                   </svg>
                 ) : (
-                  <svg
-                    className="w-6 h-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -1013,12 +1335,7 @@ function DesignerContent() {
                 onClick={() => setSubmitMessage(null)}
                 className="flex-shrink-0 text-white hover:text-gray-200"
               >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"

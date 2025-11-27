@@ -15,10 +15,7 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!customerDetails || !shapes || !material || !svgContent) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
     // Calculate quote
@@ -129,18 +126,26 @@ export async function POST(request: NextRequest) {
         <span class="info-label">Phone:</span>
         <span class="info-value"><a href="tel:${customerDetails.phone}">${customerDetails.phone}</a></span>
       </div>
-      ${customerDetails.companyName ? `
+      ${
+        customerDetails.companyName
+          ? `
       <div class="info-row">
         <span class="info-label">Company:</span>
         <span class="info-value">${customerDetails.companyName}</span>
       </div>
-      ` : ''}
-      ${customerDetails.notes ? `
+      `
+          : ''
+      }
+      ${
+        customerDetails.notes
+          ? `
       <div class="info-row">
         <span class="info-label">Notes:</span>
         <span class="info-value">${customerDetails.notes}</span>
       </div>
-      ` : ''}
+      `
+          : ''
+      }
     </div>
 
     <div class="section">
@@ -165,12 +170,16 @@ export async function POST(request: NextRequest) {
         <span class="info-label">Total Area:</span>
         <span class="info-value">${(quote.totalArea * 10000).toFixed(2)} cm² (${quote.totalArea.toFixed(6)} m²)</span>
       </div>
-      ${quote.shapes.map(shape => `
+      ${quote.shapes
+        .map(
+          shape => `
       <div class="info-row">
         <span class="info-label">${shape.type}:</span>
         <span class="info-value">${shape.count} piece(s), ${(shape.area * 10000).toFixed(2)} cm²</span>
       </div>
-      `).join('')}
+      `
+        )
+        .join('')}
 
       <div class="quote-highlight">
         <div style="margin-bottom: 10px;">Estimated Material Cost:</div>
@@ -213,10 +222,7 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('Resend error:', error)
-      return NextResponse.json(
-        { error: 'Failed to send email' },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: 'Failed to send email' }, { status: 500 })
     }
 
     return NextResponse.json({
@@ -226,9 +232,6 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Submit job error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

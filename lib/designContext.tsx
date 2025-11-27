@@ -29,21 +29,19 @@ export function DesignProvider({ children }: { children: ReactNode }) {
   const [gridUnit] = useState<'mm' | 'inch'>('mm')
 
   const addShape = (shape: Shape) => {
-    setShapes((prev) => [...prev, shape])
+    setShapes(prev => [...prev, shape])
   }
 
   const removeShape = (id: string) => {
-    setShapes((prev) => prev.filter((shape) => shape.id !== id))
+    setShapes(prev => prev.filter(shape => shape.id !== id))
     if (selectedShapeId === id) {
       setSelectedShapeId(null)
     }
   }
 
   const updateShape = (id: string, updates: Partial<Shape>) => {
-    setShapes((prev) =>
-      prev.map((shape) =>
-        shape.id === id ? { ...shape, ...updates } as Shape : shape
-      )
+    setShapes(prev =>
+      prev.map(shape => (shape.id === id ? ({ ...shape, ...updates } as Shape) : shape))
     )
   }
 
