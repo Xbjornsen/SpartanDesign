@@ -4,13 +4,18 @@ import { Shape, Material } from '@/lib/types'
 import { calculateQuote, formatQuoteForEmail } from '@/lib/quoteCalculation'
 import { exportBendInstructionsText } from '@/lib/exportSVG'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-
 // Engineer's email - can be configured via environment variable
 const ENGINEER_EMAIL = process.env.ENGINEER_EMAIL || 'engineer@spartandesign.com'
 
 export async function POST(request: NextRequest) {
   try {
+    // Initialize Resend with API key (only when route is called)
+    const apiKey = process.env.RESEND_API_KEY
+    if (!apiKey) {
+      return NextResponse.json({ error: 'Email service not configured' }, { status: 500 })
+    }
+    const resend = new Resend(apiKey)
+
     const body = await request.json()
     const { customerDetails, shapes, material, svgContent } = body
 

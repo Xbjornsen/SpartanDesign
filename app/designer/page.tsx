@@ -972,73 +972,6 @@ function DesignerContent() {
           </div>
 
           <h2 className="font-heading text-lg font-bold mb-3 text-neutral-900 flex items-center gap-2">
-            <svg className="w-5 h-5 text-secondary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
-            </svg>
-            Material Selection
-          </h2>
-          <div className="space-y-2">
-            <label className="flex items-center p-3 border border-neutral-300 rounded-lg cursor-pointer hover:bg-neutral-50 transition bg-white shadow-sm">
-              <input
-                type="radio"
-                name="metalType"
-                value="Mild Steel"
-                checked={selectedMetalType === 'Mild Steel'}
-                onChange={e => handleMetalTypeChange(e.target.value)}
-                className="mr-3 w-4 h-4 accent-primary-500"
-              />
-              <span className="font-medium text-neutral-900">Mild Steel</span>
-            </label>
-            <label className="flex items-center p-3 border border-neutral-300 rounded-lg cursor-pointer hover:bg-neutral-50 transition bg-white shadow-sm">
-              <input
-                type="radio"
-                name="metalType"
-                value="Stainless Steel"
-                checked={selectedMetalType === 'Stainless Steel'}
-                onChange={e => handleMetalTypeChange(e.target.value)}
-                className="mr-3 w-4 h-4 accent-primary-500"
-              />
-              <span className="font-medium text-neutral-900">
-                Stainless Steel
-              </span>
-            </label>
-            <label className="flex items-center p-3 border border-neutral-300 rounded-lg cursor-pointer hover:bg-neutral-50 transition bg-white shadow-sm">
-              <input
-                type="radio"
-                name="metalType"
-                value="Aluminium"
-                checked={selectedMetalType === 'Aluminium'}
-                onChange={e => handleMetalTypeChange(e.target.value)}
-                className="mr-3 w-4 h-4 accent-primary-500"
-              />
-              <span className="font-medium text-neutral-900">Aluminium</span>
-            </label>
-          </div>
-
-          <h2 className="text-lg font-semibold mt-6 mb-4 text-neutral-900">
-            Thickness
-          </h2>
-          <select
-            value={selectedThickness}
-            onChange={e => handleThicknessChange(parseFloat(e.target.value))}
-            className="w-full px-4 py-2 border border-neutral-300 rounded-lg bg-white text-neutral-900 shadow-sm"
-          >
-            {availableThicknesses.map(thickness => {
-              return (
-                <option key={thickness} value={thickness}>
-                  {thickness}mm
-                </option>
-              )
-            })}
-          </select>
-
-          <div className="mt-3 p-3 bg-accent-50 rounded-lg border border-accent-200">
-            <p className="text-sm text-neutral-800">
-              <strong>Selected:</strong> {material.name} {material.thickness}mm
-            </p>
-          </div>
-
-          <h2 className="font-heading text-lg font-bold mt-6 mb-3 text-neutral-900 flex items-center gap-2">
             <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
             </svg>
@@ -1193,6 +1126,73 @@ function DesignerContent() {
               Set dimensions, then click + Rectangle or + Circle to create a shape
             </p>
           )}
+
+          <h2 className="font-heading text-lg font-bold mt-6 mb-3 text-neutral-900 flex items-center gap-2">
+            <svg className="w-5 h-5 text-secondary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+            </svg>
+            Material Selection
+          </h2>
+          <div className="space-y-2">
+            <label className="flex items-center p-3 border border-neutral-300 rounded-lg cursor-pointer hover:bg-neutral-50 transition bg-white shadow-sm">
+              <input
+                type="radio"
+                name="metalType"
+                value="Mild Steel"
+                checked={selectedMetalType === 'Mild Steel'}
+                onChange={e => handleMetalTypeChange(e.target.value)}
+                className="mr-3 w-4 h-4 accent-primary-500"
+              />
+              <span className="font-medium text-neutral-900">Mild Steel</span>
+            </label>
+            <label className="flex items-center p-3 border border-neutral-300 rounded-lg cursor-pointer hover:bg-neutral-50 transition bg-white shadow-sm">
+              <input
+                type="radio"
+                name="metalType"
+                value="Stainless Steel"
+                checked={selectedMetalType === 'Stainless Steel'}
+                onChange={e => handleMetalTypeChange(e.target.value)}
+                className="mr-3 w-4 h-4 accent-primary-500"
+              />
+              <span className="font-medium text-neutral-900">
+                Stainless Steel
+              </span>
+            </label>
+            <label className="flex items-center p-3 border border-neutral-300 rounded-lg cursor-pointer hover:bg-neutral-50 transition bg-white shadow-sm">
+              <input
+                type="radio"
+                name="metalType"
+                value="Aluminium"
+                checked={selectedMetalType === 'Aluminium'}
+                onChange={e => handleMetalTypeChange(e.target.value)}
+                className="mr-3 w-4 h-4 accent-primary-500"
+              />
+              <span className="font-medium text-neutral-900">Aluminium</span>
+            </label>
+          </div>
+
+          <h2 className="text-lg font-semibold mt-6 mb-4 text-neutral-900">
+            Thickness
+          </h2>
+          <select
+            value={selectedThickness}
+            onChange={e => handleThicknessChange(parseFloat(e.target.value))}
+            className="w-full px-4 py-2 border border-neutral-300 rounded-lg bg-white text-neutral-900 shadow-sm"
+          >
+            {availableThicknesses.map(thickness => {
+              return (
+                <option key={thickness} value={thickness}>
+                  {thickness}mm
+                </option>
+              )
+            })}
+          </select>
+
+          <div className="mt-3 p-3 bg-accent-50 rounded-lg border border-accent-200">
+            <p className="text-sm text-neutral-800">
+              <strong>Selected:</strong> {material.name} {material.thickness}mm
+            </p>
+          </div>
 
           {selectedShape && (
             <>
