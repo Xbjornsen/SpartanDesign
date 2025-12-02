@@ -164,6 +164,13 @@ function DesignerContent() {
 
   const selectedShape = shapes.find(s => s.id === selectedShapeId)
 
+  // Sync bend orientation with existing bends when shape is selected
+  useEffect(() => {
+    if (selectedShape && selectedShape.bends && selectedShape.bends.length > 0) {
+      setNewBendOrientation(selectedShape.bends[0].orientation)
+    }
+  }, [selectedShapeId, selectedShape])
+
   // Unit conversion functions (internal storage is always in mm)
   const toMm = (value: number, unit: 'mm' | 'cm' | 'm'): number => {
     switch (unit) {
@@ -609,6 +616,16 @@ function DesignerContent() {
   const handleAddBend = () => {
     if (!selectedShape || selectedShape.type !== 'rectangle') return
 
+    // Check if there are existing bends with different orientation
+    const existingBends = selectedShape.bends || []
+    if (existingBends.length > 0) {
+      const existingOrientation = existingBends[0].orientation
+      if (existingOrientation !== newBendOrientation) {
+        alert(`Cannot mix horizontal and vertical bends. This shape already has ${existingOrientation} bends.`)
+        return
+      }
+    }
+
     const positionMm = toMm(newBendPosition, displayUnit)
     const radiusMm = toMm(newBendRadius, displayUnit)
 
@@ -767,7 +784,7 @@ function DesignerContent() {
       setIsSubmitModalOpen(false)
       setSubmitMessage({
         type: 'success',
-        text: 'Job submitted successfully! We will contact you shortly with a detailed quote.',
+        text: 'Job submitted successfully!',
       })
       setTimeout(() => setSubmitMessage(null), 10000)
     } catch (error) {
@@ -1489,11 +1506,17 @@ function DesignerContent() {
                       <select
                         value={newBendOrientation}
                         onChange={e => setNewBendOrientation(e.target.value as 'horizontal' | 'vertical')}
-                        className="w-full px-2 py-1 border border-neutral-300 rounded-lg text-sm bg-white text-neutral-900"
+                        disabled={selectedShape.bends && selectedShape.bends.length > 0}
+                        className="w-full px-2 py-1 border border-neutral-300 rounded-lg text-sm bg-white text-neutral-900 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <option value="horizontal">Horizontal (↔)</option>
                         <option value="vertical">Vertical (↕)</option>
                       </select>
+                      {selectedShape.bends && selectedShape.bends.length > 0 && (
+                        <p className="text-xs text-neutral-500 mt-1 italic">
+                          Orientation locked to {selectedShape.bends[0].orientation}
+                        </p>
+                      )}
                     </div>
 
                     <div>

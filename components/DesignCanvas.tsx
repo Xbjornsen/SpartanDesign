@@ -82,6 +82,120 @@ interface Shape3DProps {
   onHoleSelected?: (holeId: string | null) => void
 }
 
+// Helper to create bent geometry for rectangles as a single mesh
+function createBentGeometry(rect: Rectangle, depth: number) {
+  if (!rect.bends || rect.bends.length === 0) return null
+
+  // Sort bends by position
+  const sortedBends = [...rect.bends].sort((a, b) => a.position - b.position)
+
+  // Only support horizontal bends for now
+  const horizontalBends = sortedBends.filter(b => b.orientation === 'horizontal')
+  if (horizontalBends.length === 0) return null
+
+  const geometry = new THREE.BufferGeometry()
+  const vertices: number[] = []
+  const indices: number[] = []
+
+  const halfWidth = rect.width / 2
+  const halfDepth = depth / 2
+
+  // Build vertices along the bent path
+  let currentY = 0
+  let currentZ = -rect.height / 2
+  let currentAngle = 0
+
+  // Add vertices for each segment
+  const segments = []
+  let prevPos = 0
+
+  horizontalBends.forEach((bend) => {
+    const segmentHeight = bend.position - prevPos
+    if (segmentHeight > 0) {
+      segments.push({
+        height: segmentHeight,
+        endAngle: currentAngle,
+      })
+    }
+
+    const angleRad = (bend.angle * Math.PI) / 180
+    const bendDirection = bend.direction === 'up' ? 1 : -1
+    currentAngle += angleRad * bendDirection
+    prevPos = bend.position
+  })
+
+  // Final segment
+  const finalHeight = rect.height - prevPos
+  if (finalHeight > 0) {
+    segments.push({
+      height: finalHeight,
+      endAngle: currentAngle,
+    })
+  }
+
+  // Generate vertices
+  currentY = 0
+  currentZ = -rect.height / 2
+  let vertexIndex = 0
+
+  segments.forEach((segment, segIndex) => {
+    const startY = currentY
+    const startZ = currentZ
+    const angle = segment.endAngle
+
+    // Calculate end position
+    const endZ = startZ + segment.height * Math.cos(angle)
+    const endY = startY + segment.height * Math.sin(angle)
+
+    // Add 4 vertices for this segment (front face)
+    // Bottom left
+    vertices.push(-halfWidth, startY, startZ)
+    // Bottom right
+    vertices.push(halfWidth, startY, startZ)
+    // Top left
+    vertices.push(-halfWidth, endY, endZ)
+    // Top right
+    vertices.push(halfWidth, endY, endZ)
+
+    // Add back face vertices
+    vertices.push(-halfWidth - depth, startY, startZ)
+    vertices.push(halfWidth + depth, startY, startZ)
+    vertices.push(-halfWidth - depth, endY, endZ)
+    vertices.push(halfWidth + depth, endY, endZ)
+
+    // Add faces for this segment
+    const base = segIndex * 8
+    // Front face
+    indices.push(base, base + 1, base + 2)
+    indices.push(base + 1, base + 3, base + 2)
+    // Back face
+    indices.push(base + 4, base + 6, base + 5)
+    indices.push(base + 5, base + 6, base + 7)
+    // Left face
+    indices.push(base, base + 2, base + 4)
+    indices.push(base + 2, base + 6, base + 4)
+    // Right face
+    indices.push(base + 1, base + 5, base + 3)
+    indices.push(base + 3, base + 5, base + 7)
+
+    // Connect to next segment if exists
+    if (segIndex < segments.length - 1) {
+      // Top face connecting to next segment
+      indices.push(base + 2, base + 3, base + 10)
+      indices.push(base + 3, base + 11, base + 10)
+    }
+
+    currentY = endY
+    currentZ = endZ
+  })
+
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3))
+  geometry.setIndex(indices)
+  geometry.computeVertexNormals()
+
+  return geometry
+}
+
 function Shape3D({
   shape,
   is2DView,
@@ -328,6 +442,32 @@ function Shape3D({
               handlePointerOut()
             }}
             geometry={roundedRectGeometry}
+          >
+            <meshStandardMaterial
+              color={color}
+              emissive={isSelected ? '#059669' : '#000000'}
+              emissiveIntensity={isSelected ? 0.2 : 0}
+            />
+          </mesh>
+        )
+      }
+
+      // In 3D view with bends, render as single bent geometry
+      const bentGeometry = !is2DView && rect.bends && rect.bends.length > 0 ? createBentGeometry(rect, depth) : null
+
+      if (bentGeometry) {
+        return (
+          <mesh
+            position={[rect.position.x, yPosition, rect.position.y]}
+            onClick={handleClick}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerOver={() => setHovered(true)}
+            onPointerOut={() => {
+              setHovered(false)
+              handlePointerOut()
+            }}
+            geometry={bentGeometry}
           >
             <meshStandardMaterial
               color={color}
@@ -702,19 +842,14 @@ function BendLines({
               if (onBendSelected) onBendSelected(bend.id)
             }}
           >
-            {/* Bend line */}
-            <line>
-              <bufferGeometry>
-                <bufferAttribute
-                  attach="attributes-position"
-                  args={[new Float32Array([...lineStart, ...lineEnd]), 3]}
-                />
-              </bufferGeometry>
-              <lineBasicMaterial
-                color={isSelected ? '#f97316' : '#ea580c'}
-                linewidth={isSelected ? 3 : 2}
-              />
-            </line>
+            {/* Bend line - using thin box instead of line geometry */}
+            <mesh
+              position={[(lineStart[0] + lineEnd[0]) / 2, depth / 2 + 0.1, (lineStart[2] + lineEnd[2]) / 2]}
+              rotation={bend.orientation === 'horizontal' ? [0, 0, 0] : [0, Math.PI / 2, 0]}
+            >
+              <boxGeometry args={[lineLength, 0.3, 0.3]} />
+              <meshBasicMaterial color={isSelected ? '#f97316' : '#ea580c'} />
+            </mesh>
 
             {/* Direction arrow */}
             <mesh position={[midpoint[0], midpoint[1], midpoint[2]]}>
