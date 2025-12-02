@@ -24,12 +24,22 @@ export interface Hole {
   radius?: number // For circle holes
 }
 
+export interface Bend {
+  id: string
+  position: number // Distance from bottom edge (horizontal) or left edge (vertical) in mm
+  orientation: 'horizontal' | 'vertical' // Direction of the bend line
+  angle: number // Bend angle in degrees (e.g., 90, 45, 30)
+  direction: 'up' | 'down' // Which way the material bends
+  radius: number // Inside bend radius in mm
+}
+
 export interface BaseShape {
   id: string
   type: ShapeType
   position: Position
   color?: string
   holes?: Hole[] // Cut holes in the shape
+  bends?: Bend[] // Bend lines for sheet metal bending
   locked?: boolean // Whether the shape is locked in place
   rotation?: number // Rotation in radians
 }

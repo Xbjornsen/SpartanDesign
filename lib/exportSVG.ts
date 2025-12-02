@@ -1,4 +1,4 @@
-import { Shape, Rectangle, Circle, CustomPath, Hole } from './types'
+import { Shape, Rectangle, Circle, CustomPath, Hole, Bend } from './types'
 
 export function exportToSVG(shapes: Shape[], width: number = 800, height: number = 600): string {
   if (shapes.length === 0) {
@@ -34,6 +34,16 @@ export function exportToSVG(shapes: Shape[], width: number = 800, height: number
           const holeSVG = holeToSVG(hole, shape.position)
           if (holeSVG) {
             svgContent += `    ${holeSVG}\n`
+          }
+        })
+      }
+
+      // Add bend lines if present
+      if (shape.bends && shape.bends.length > 0) {
+        shape.bends.forEach(bend => {
+          const bendSVG = bendToSVG(bend, shape)
+          if (bendSVG) {
+            svgContent += `    ${bendSVG}\n`
           }
         })
       }
@@ -96,6 +106,46 @@ function holeToSVG(hole: Hole, parentPosition: { x: number; y: number }): string
   return ''
 }
 
+function bendToSVG(bend: Bend, shape: Shape): string {
+  if (shape.type !== 'rectangle') return ''
+
+  const rect = shape as Rectangle
+  const bendColor = '#ff6600' // Orange color for bend lines
+  const strokeWidth = 1
+
+  // Calculate bend line position
+  let x1, y1, x2, y2
+  if (bend.orientation === 'horizontal') {
+    // Horizontal bend line (left to right)
+    const yPos = shape.position.y - rect.height / 2 + bend.position
+    x1 = shape.position.x - rect.width / 2
+    y1 = yPos
+    x2 = shape.position.x + rect.width / 2
+    y2 = yPos
+  } else {
+    // Vertical bend line (top to bottom)
+    const xPos = shape.position.x - rect.width / 2 + bend.position
+    x1 = xPos
+    y1 = shape.position.y - rect.height / 2
+    x2 = xPos
+    y2 = shape.position.y + rect.height / 2
+  }
+
+  // Calculate midpoint for text label
+  const midX = (x1 + x2) / 2
+  const midY = (y1 + y2) / 2
+
+  // Create SVG group with bend line and annotation
+  let svg = `<g id="bend-${bend.id}">\n`
+  svg += `      <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${bendColor}" stroke-width="${strokeWidth}" stroke-dasharray="5,5" />\n`
+  svg += `      <text x="${midX}" y="${midY - 2}" text-anchor="middle" font-size="8" fill="${bendColor}" font-weight="bold">`
+  svg += `BEND ${bend.angle}° ${bend.direction.toUpperCase()} | R${bend.radius}mm`
+  svg += `</text>\n`
+  svg += `    </g>`
+
+  return svg
+}
+
 function calculateBounds(shapes: Shape[]) {
   let minX = Infinity
   let minY = Infinity
@@ -150,4 +200,154 @@ export function downloadSVG(svgContent: string, filename: string = 'design.svg')
   link.click()
   document.body.removeChild(link)
   URL.revokeObjectURL(url)
+}
+
+// Export bend instructions as JSON
+export function exportBendInstructions(shapes: Shape[]): string {
+  const bendInstructions: any[] = []
+
+  shapes.forEach((shape, shapeIndex) => {
+    if (shape.bends && shape.bends.length > 0 && shape.type === 'rectangle') {
+      const rect = shape as Rectangle
+
+      shape.bends.forEach((bend, bendIndex) => {
+        bendInstructions.push({
+          shapeId: shape.id,
+          shapeIndex: shapeIndex + 1,
+          bendNumber: bendIndex + 1,
+          orientation: bend.orientation,
+          position: {
+            value: bend.position,
+            unit: 'mm',
+            description: bend.orientation === 'horizontal'
+              ? `${bend.position}mm from bottom edge`
+              : `${bend.position}mm from left edge`
+          },
+          angle: {
+            value: bend.angle,
+            unit: 'degrees'
+          },
+          direction: bend.direction,
+          bendRadius: {
+            value: bend.radius,
+            unit: 'mm'
+          },
+          sheetDimensions: {
+            width: rect.width,
+            height: rect.height,
+            unit: 'mm'
+          }
+        })
+      })
+    }
+  })
+
+  const exportData = {
+    exportDate: new Date().toISOString(),
+    generator: 'Spartan Design',
+    totalBends: bendInstructions.length,
+    bends: bendInstructions
+  }
+
+  return JSON.stringify(exportData, null, 2)
+}
+
+export function downloadBendInstructions(jsonContent: string, filename: string = 'bend-instructions.json') {
+  const blob = new Blob([jsonContent], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
+
+// Export bend instructions as human-readable plain text
+export function exportBendInstructionsText(shapes: Shape[]): string {
+  let textContent = '========================================\n'
+  textContent += '   SHEET METAL BENDING INSTRUCTIONS\n'
+  textContent += '========================================\n\n'
+  textContent += `Generated: ${new Date().toLocaleString()}\n`
+  textContent += `Source: Spartan Design Platform\n\n`
+
+  let totalBends = 0
+  const bendsPerShape: { shape: Shape; bends: any[] }[] = []
+
+  // Collect all bends
+  shapes.forEach((shape, shapeIndex) => {
+    if (shape.bends && shape.bends.length > 0 && shape.type === 'rectangle') {
+      totalBends += shape.bends.length
+      bendsPerShape.push({ shape, bends: shape.bends })
+    }
+  })
+
+  if (totalBends === 0) {
+    textContent += 'No bends required for this design.\n'
+    return textContent
+  }
+
+  textContent += `TOTAL BENDS REQUIRED: ${totalBends}\n\n`
+  textContent += '========================================\n\n'
+
+  // List each shape with bends
+  bendsPerShape.forEach(({ shape, bends }, shapeIndex) => {
+    const rect = shape as Rectangle
+
+    textContent += `PART ${shapeIndex + 1}: Rectangle (${rect.width}mm × ${rect.height}mm)\n`
+    textContent += `${'='.repeat(50)}\n\n`
+
+    textContent += `Sheet Dimensions:\n`
+    textContent += `  - Width:  ${rect.width.toFixed(2)} mm\n`
+    textContent += `  - Height: ${rect.height.toFixed(2)} mm\n\n`
+
+    bends.forEach((bend, bendIndex) => {
+      const bendNumber = bendIndex + 1
+
+      textContent += `BEND #${bendNumber}:\n`
+      textContent += `${'-'.repeat(40)}\n`
+
+      // Position description
+      if (bend.orientation === 'horizontal') {
+        textContent += `  Location: HORIZONTAL bend line\n`
+        textContent += `  Position: ${bend.position.toFixed(2)} mm from BOTTOM edge\n`
+      } else {
+        textContent += `  Location: VERTICAL bend line\n`
+        textContent += `  Position: ${bend.position.toFixed(2)} mm from LEFT edge\n`
+      }
+
+      // Bend specifications
+      textContent += `  Bend Angle: ${bend.angle}°\n`
+      textContent += `  Direction: ${bend.direction.toUpperCase()} (${bend.direction === 'up' ? '+Z' : '-Z'})\n`
+      textContent += `  Inside Radius: ${bend.radius.toFixed(2)} mm\n\n`
+
+      // Step-by-step instructions
+      textContent += `  STEPS:\n`
+      textContent += `  1. Mark bend line at ${bend.position.toFixed(2)}mm from ${bend.orientation === 'horizontal' ? 'bottom' : 'left'} edge\n`
+      textContent += `  2. Set press brake to ${bend.angle}° angle\n`
+      textContent += `  3. Use ${bend.radius.toFixed(2)}mm radius die\n`
+      textContent += `  4. Position sheet with bend line aligned to die\n`
+      textContent += `  5. Bend ${bend.direction === 'up' ? 'upward' : 'downward'} to ${bend.angle}°\n`
+      textContent += `  6. Verify angle with protractor/gauge\n\n`
+    })
+
+    textContent += '\n'
+  })
+
+  textContent += '========================================\n'
+  textContent += 'IMPORTANT NOTES:\n'
+  textContent += '========================================\n'
+  textContent += '- Bend lines are marked on the SVG file with orange dashed lines\n'
+  textContent += '- All measurements are in millimeters (mm)\n'
+  textContent += '- Complete bends in the order listed above\n'
+  textContent += '- Verify all angles after bending\n'
+  textContent += '- Check for material springback and adjust if needed\n'
+  textContent += '- Ensure proper die clearance for material thickness\n\n'
+
+  textContent += '========================================\n'
+  textContent += 'END OF BEND INSTRUCTIONS\n'
+  textContent += '========================================\n'
+
+  return textContent
 }
