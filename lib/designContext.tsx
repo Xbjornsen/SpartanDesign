@@ -10,6 +10,10 @@ interface DesignContextType extends DesignState {
   selectShape: (id: string | null) => void
   setMaterial: (material: Material) => void
   clearDesign: () => void
+  undo: () => void
+  redo: () => void
+  canUndo: boolean
+  canRedo: boolean
 }
 
 const defaultMaterial: Material = {
@@ -28,21 +32,55 @@ export function DesignProvider({ children }: { children: ReactNode }) {
   const [material, setMaterial] = useState<Material>(defaultMaterial)
   const [gridUnit] = useState<'mm' | 'inch'>('mm')
 
+  // Undo/Redo history
+  const [history, setHistory] = useState<Shape[][]>([[]])
+  const [historyIndex, setHistoryIndex] = useState(0)
+
+  // Helper to push state to history
+  const pushHistory = (newShapes: Shape[]) => {
+    setHistory(prev => {
+      // Remove any future states if we're not at the end
+      const newHistory = prev.slice(0, historyIndex + 1)
+      // Add new state
+      newHistory.push(JSON.parse(JSON.stringify(newShapes))) // Deep clone
+      // Limit history to 50 states
+      if (newHistory.length > 50) {
+        newHistory.shift()
+        setHistoryIndex(prev => Math.max(0, prev))
+        return newHistory
+      }
+      setHistoryIndex(newHistory.length - 1)
+      return newHistory
+    })
+  }
+
   const addShape = (shape: Shape) => {
-    setShapes(prev => [...prev, shape])
+    setShapes(prev => {
+      const newShapes = [...prev, shape]
+      pushHistory(newShapes)
+      return newShapes
+    })
   }
 
   const removeShape = (id: string) => {
-    setShapes(prev => prev.filter(shape => shape.id !== id))
+    setShapes(prev => {
+      const newShapes = prev.filter(shape => shape.id !== id)
+      pushHistory(newShapes)
+      return newShapes
+    })
     if (selectedShapeId === id) {
       setSelectedShapeId(null)
     }
   }
 
   const updateShape = (id: string, updates: Partial<Shape>) => {
-    setShapes(prev =>
-      prev.map(shape => (shape.id === id ? ({ ...shape, ...updates } as Shape) : shape))
-    )
+    setShapes(prev => {
+      const newShapes = prev.map(shape =>
+        shape.id === id ? ({ ...shape, ...updates } as Shape) : shape
+      )
+      pushHistory(newShapes)
+      return newShapes
+    })
   }
 
   const selectShape = (id: string | null) => {
@@ -52,7 +90,28 @@ export function DesignProvider({ children }: { children: ReactNode }) {
   const clearDesign = () => {
     setShapes([])
     setSelectedShapeId(null)
+    setHistory([[]])
+    setHistoryIndex(0)
   }
+
+  const undo = () => {
+    if (historyIndex > 0) {
+      const newIndex = historyIndex - 1
+      setHistoryIndex(newIndex)
+      setShapes(JSON.parse(JSON.stringify(history[newIndex]))) // Deep clone
+    }
+  }
+
+  const redo = () => {
+    if (historyIndex < history.length - 1) {
+      const newIndex = historyIndex + 1
+      setHistoryIndex(newIndex)
+      setShapes(JSON.parse(JSON.stringify(history[newIndex]))) // Deep clone
+    }
+  }
+
+  const canUndo = historyIndex > 0
+  const canRedo = historyIndex < history.length - 1
 
   return (
     <DesignContext.Provider
@@ -67,6 +126,10 @@ export function DesignProvider({ children }: { children: ReactNode }) {
         selectShape,
         setMaterial,
         clearDesign,
+        undo,
+        redo,
+        canUndo,
+        canRedo,
       }}
     >
       {children}

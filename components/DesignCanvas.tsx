@@ -12,7 +12,7 @@ import {
   Text as TextShape,
   Triangle,
 } from '@/lib/types'
-import { Center, Grid, OrbitControls, Text3D } from '@react-three/drei'
+import { Center, Grid, Html, OrbitControls, Text3D } from '@react-three/drei'
 import { Canvas, ThreeEvent, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
@@ -76,9 +76,136 @@ interface Shape3DProps {
   is2DView: boolean
   setControlsEnabled: (enabled: boolean) => void
   thickness: number
+  holePlacementMode?: boolean
+  onHolePlaced?: (x: number, y: number) => void
+  selectedHoleId?: string | null
+  onHoleSelected?: (holeId: string | null) => void
 }
 
-function Shape3D({ shape, is2DView, setControlsEnabled, thickness }: Shape3DProps) {
+// Helper to create bent geometry for rectangles as a single mesh
+function createBentGeometry(rect: Rectangle, depth: number) {
+  if (!rect.bends || rect.bends.length === 0) return null
+
+  // Sort bends by position
+  const sortedBends = [...rect.bends].sort((a, b) => a.position - b.position)
+
+  // Only support horizontal bends for now
+  const horizontalBends = sortedBends.filter(b => b.orientation === 'horizontal')
+  if (horizontalBends.length === 0) return null
+
+  const geometry = new THREE.BufferGeometry()
+  const vertices: number[] = []
+  const indices: number[] = []
+
+  const halfWidth = rect.width / 2
+  const halfDepth = depth / 2
+
+  // Build vertices along the bent path
+  let currentY = 0
+  let currentZ = -rect.height / 2
+  let currentAngle = 0
+
+  // Add vertices for each segment
+  const segments = []
+  let prevPos = 0
+
+  horizontalBends.forEach((bend) => {
+    const segmentHeight = bend.position - prevPos
+    if (segmentHeight > 0) {
+      segments.push({
+        height: segmentHeight,
+        endAngle: currentAngle,
+      })
+    }
+
+    const angleRad = (bend.angle * Math.PI) / 180
+    const bendDirection = bend.direction === 'up' ? 1 : -1
+    currentAngle += angleRad * bendDirection
+    prevPos = bend.position
+  })
+
+  // Final segment
+  const finalHeight = rect.height - prevPos
+  if (finalHeight > 0) {
+    segments.push({
+      height: finalHeight,
+      endAngle: currentAngle,
+    })
+  }
+
+  // Generate vertices
+  currentY = 0
+  currentZ = -rect.height / 2
+  let vertexIndex = 0
+
+  segments.forEach((segment, segIndex) => {
+    const startY = currentY
+    const startZ = currentZ
+    const angle = segment.endAngle
+
+    // Calculate end position
+    const endZ = startZ + segment.height * Math.cos(angle)
+    const endY = startY + segment.height * Math.sin(angle)
+
+    // Add 4 vertices for this segment (front face)
+    // Bottom left
+    vertices.push(-halfWidth, startY, startZ)
+    // Bottom right
+    vertices.push(halfWidth, startY, startZ)
+    // Top left
+    vertices.push(-halfWidth, endY, endZ)
+    // Top right
+    vertices.push(halfWidth, endY, endZ)
+
+    // Add back face vertices
+    vertices.push(-halfWidth - depth, startY, startZ)
+    vertices.push(halfWidth + depth, startY, startZ)
+    vertices.push(-halfWidth - depth, endY, endZ)
+    vertices.push(halfWidth + depth, endY, endZ)
+
+    // Add faces for this segment
+    const base = segIndex * 8
+    // Front face
+    indices.push(base, base + 1, base + 2)
+    indices.push(base + 1, base + 3, base + 2)
+    // Back face
+    indices.push(base + 4, base + 6, base + 5)
+    indices.push(base + 5, base + 6, base + 7)
+    // Left face
+    indices.push(base, base + 2, base + 4)
+    indices.push(base + 2, base + 6, base + 4)
+    // Right face
+    indices.push(base + 1, base + 5, base + 3)
+    indices.push(base + 3, base + 5, base + 7)
+
+    // Connect to next segment if exists
+    if (segIndex < segments.length - 1) {
+      // Top face connecting to next segment
+      indices.push(base + 2, base + 3, base + 10)
+      indices.push(base + 3, base + 11, base + 10)
+    }
+
+    currentY = endY
+    currentZ = endZ
+  })
+
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3))
+  geometry.setIndex(indices)
+  geometry.computeVertexNormals()
+
+  return geometry
+}
+
+function Shape3D({
+  shape,
+  is2DView,
+  setControlsEnabled,
+  thickness,
+  holePlacementMode = false,
+  onHolePlaced,
+  selectedHoleId,
+  onHoleSelected,
+}: Shape3DProps) {
   const { selectedShapeId, selectShape, updateShape } = useDesign()
   const { camera, raycaster, gl } = useThree()
   const [hovered, setHovered] = useState(false)
@@ -88,8 +215,40 @@ function Shape3D({ shape, is2DView, setControlsEnabled, thickness }: Shape3DProp
 
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation()
+
+    // If in hole placement mode, place a hole at click position
+    if (holePlacementMode && onHolePlaced && isSelected) {
+      // Get the intersection point
+      const point = e.point
+      // Convert from world coordinates to shape-relative coordinates
+      const relativeX = point.x - shape.position.x
+      const relativeY = point.z - shape.position.y
+      onHolePlaced(relativeX, relativeY)
+      return
+    }
+
     if (!isDragging) {
       selectShape(shape.id)
+      if (onHoleSelected) onHoleSelected(null)
+    }
+  }
+
+  const handlePointerMove = (e: ThreeEvent<PointerEvent>) => {
+    // Show cursor coordinates when in hole placement mode and shape is selected
+    if (holePlacementMode && isSelected && onHolePlaced) {
+      const point = e.point
+      const relativeX = point.x - shape.position.x
+      const relativeY = point.z - shape.position.y
+
+      // Store in window for the HTML overlay to access
+      ;(window as any).__holePreviewCoords = { x: relativeX, y: relativeY }
+    }
+  }
+
+  const handlePointerOut = () => {
+    // Clear preview coords when leaving shape
+    if (holePlacementMode) {
+      ;(window as any).__holePreviewCoords = null
     }
   }
 
@@ -171,7 +330,7 @@ function Shape3D({ shape, is2DView, setControlsEnabled, thickness }: Shape3DProp
   const yPosition = is2DView ? 0 : depth / 2
   const hasHoles = shape.holes && shape.holes.length > 0
 
-  // Compute CSG geometry with holes
+  // Compute CSG geometry with holes - optimized dependencies
   const geometryWithHoles = useMemo(() => {
     if (!hasHoles) return null
 
@@ -199,15 +358,13 @@ function Shape3D({ shape, is2DView, setControlsEnabled, thickness }: Shape3DProp
         let holeBrush: Brush | null = null
 
         if (hole.type === 'rectangle' && hole.width && hole.height) {
-          const holeGeom = new THREE.BoxGeometry(hole.width, 0.2, hole.height)
+          const holeGeom = new THREE.BoxGeometry(hole.width, depth + 1, hole.height)
           holeBrush = new Brush(holeGeom)
           holeBrush.position.set(hole.position.x, 0, hole.position.y)
         } else if (hole.type === 'circle' && hole.radius) {
-          const holeGeom = new THREE.CylinderGeometry(hole.radius, hole.radius, 0.2, 64)
+          const holeGeom = new THREE.CylinderGeometry(hole.radius, hole.radius, depth + 1, 32)
           holeBrush = new Brush(holeGeom)
           holeBrush.position.set(hole.position.x, 0, hole.position.y)
-          // Keep cylinder vertical (default Y-axis alignment) to cut through flat shapes
-          // No rotation needed regardless of parent shape type
         }
 
         if (holeBrush) {
@@ -221,13 +378,22 @@ function Shape3D({ shape, is2DView, setControlsEnabled, thickness }: Shape3DProp
       console.error('CSG operation failed:', error)
       return null
     }
-  }, [shape, hasHoles])
+  }, [
+    hasHoles,
+    shape.type,
+    shape.type === 'rectangle' ? (shape as Rectangle).width : null,
+    shape.type === 'rectangle' ? (shape as Rectangle).height : null,
+    shape.type === 'circle' ? (shape as Circle).radius : null,
+    depth,
+    JSON.stringify(shape.holes?.map(h => ({ ...h }))),
+  ])
 
   switch (shape.type) {
     case 'rectangle': {
       const rect = shape as Rectangle
 
       const cornerRadius = rect.cornerRadius || 0
+      // Temporarily disable rounded corners when holes are present (CSG doesn't support ExtrudeGeometry)
       const hasRoundedCorners = cornerRadius > 0 && !hasHoles
 
       // Create rounded rectangle geometry
@@ -269,9 +435,39 @@ function Shape3D({ shape, is2DView, setControlsEnabled, thickness }: Shape3DProp
             position={[rect.position.x, yPosition, rect.position.y]}
             onClick={handleClick}
             onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
             onPointerOver={() => setHovered(true)}
-            onPointerOut={() => setHovered(false)}
+            onPointerOut={() => {
+              setHovered(false)
+              handlePointerOut()
+            }}
             geometry={roundedRectGeometry}
+          >
+            <meshStandardMaterial
+              color={color}
+              emissive={isSelected ? '#059669' : '#000000'}
+              emissiveIntensity={isSelected ? 0.2 : 0}
+            />
+          </mesh>
+        )
+      }
+
+      // In 3D view with bends, render as single bent geometry
+      const bentGeometry = !is2DView && rect.bends && rect.bends.length > 0 ? createBentGeometry(rect, depth) : null
+
+      if (bentGeometry) {
+        return (
+          <mesh
+            position={[rect.position.x, yPosition, rect.position.y]}
+            onClick={handleClick}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerOver={() => setHovered(true)}
+            onPointerOut={() => {
+              setHovered(false)
+              handlePointerOut()
+            }}
+            geometry={bentGeometry}
           >
             <meshStandardMaterial
               color={color}
@@ -287,8 +483,12 @@ function Shape3D({ shape, is2DView, setControlsEnabled, thickness }: Shape3DProp
           position={[rect.position.x, yPosition, rect.position.y]}
           onClick={handleClick}
           onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
           onPointerOver={() => setHovered(true)}
-          onPointerOut={() => setHovered(false)}
+          onPointerOut={() => {
+            setHovered(false)
+            handlePointerOut()
+          }}
           geometry={geometryWithHoles || undefined}
         >
           {!geometryWithHoles && <boxGeometry args={[rect.width, depth, rect.height]} />}
@@ -491,6 +691,12 @@ interface DesignCanvasProps {
   is2DView?: boolean
   displayUnit?: 'mm' | 'cm' | 'm'
   thickness?: number
+  holePlacementMode?: boolean
+  onHolePlaced?: (x: number, y: number) => void
+  selectedHoleId?: string | null
+  onHoleSelected?: (holeId: string | null) => void
+  selectedBendId?: string | null
+  onBendSelected?: (bendId: string | null) => void
 }
 
 function CameraController({ is2DView }: { is2DView: boolean }) {
@@ -513,16 +719,214 @@ function CameraController({ is2DView }: { is2DView: boolean }) {
   return null
 }
 
-export default function DesignCanvas({ is2DView = false, displayUnit = 'mm', thickness = 2 }: DesignCanvasProps) {
-  const { shapes, selectShape } = useDesign()
+// Component to render hole position labels and visual markers in 3D space
+function HoleLabels({
+  shape,
+  displayUnit,
+  fromMm,
+  selectedHoleId,
+  onHoleSelected,
+  thickness,
+}: {
+  shape: Shape
+  displayUnit: string
+  fromMm: (v: number) => number
+  selectedHoleId: string | null
+  onHoleSelected?: (id: string | null) => void
+  thickness: number
+}) {
+  if (!shape.holes || shape.holes.length === 0) return null
+
+  const depth = thickness / 10
+
+  // Helper to convert hole position from center-based to bottom-left based
+  const holeToBottomLeft = (holePosX: number, holePosY: number): { x: number; y: number } => {
+    if (shape.type === 'rectangle') {
+      const rect = shape as Rectangle
+      return {
+        x: holePosX + rect.width / 2,
+        y: holePosY + rect.height / 2,
+      }
+    }
+    return { x: holePosX, y: holePosY }
+  }
+
+  return (
+    <>
+      {shape.holes.filter(h => h.type === 'circle').map(hole => {
+        const bottomLeftPos = holeToBottomLeft(hole.position.x, hole.position.y)
+        const worldX = shape.position.x + hole.position.x
+        const worldZ = shape.position.y + hole.position.y
+        const isSelected = hole.id === selectedHoleId
+
+        const xDisplay = fromMm(bottomLeftPos.x).toFixed(1)
+        const yDisplay = fromMm(bottomLeftPos.y).toFixed(1)
+        const holeRadius = hole.radius || 1
+
+        const diameter = holeRadius * 2
+        const diameterDisplay = fromMm(diameter).toFixed(1)
+
+        return (
+          <group key={hole.id} position={[worldX, depth / 2, worldZ]}>
+            {/* Invisible clickable area for hole selection */}
+            <mesh
+              onClick={e => {
+                e.stopPropagation()
+                if (onHoleSelected) onHoleSelected(hole.id)
+              }}
+              position={[0, depth / 2 + 0.05, 0]}
+              rotation={[-Math.PI / 2, 0, 0]}
+            >
+              <circleGeometry args={[holeRadius + 1, 32]} />
+              <meshBasicMaterial transparent opacity={0} />
+            </mesh>
+          </group>
+        )
+      })}
+    </>
+  )
+}
+
+// Component to render bend lines in 3D space
+function BendLines({
+  shape,
+  thickness,
+  selectedBendId,
+  onBendSelected,
+}: {
+  shape: Shape
+  thickness: number
+  selectedBendId: string | null
+  onBendSelected?: (id: string | null) => void
+}) {
+  if (!shape.bends || shape.bends.length === 0 || shape.type !== 'rectangle') return null
+
+  const rect = shape as Rectangle
+  const depth = thickness / 10
+
+  return (
+    <>
+      {shape.bends.map(bend => {
+        const isSelected = bend.id === selectedBendId
+
+        // Calculate bend line position and dimensions
+        let lineStart, lineEnd, lineLength
+        if (bend.orientation === 'horizontal') {
+          // Horizontal bend line (left to right)
+          const yPos = bend.position - rect.height / 2 // Convert from bottom edge to center-based
+          lineStart = [-rect.width / 2, 0, yPos]
+          lineEnd = [rect.width / 2, 0, yPos]
+          lineLength = rect.width
+        } else {
+          // Vertical bend line (top to bottom)
+          const xPos = bend.position - rect.width / 2 // Convert from left edge to center-based
+          lineStart = [xPos, 0, -rect.height / 2]
+          lineEnd = [xPos, 0, rect.height / 2]
+          lineLength = rect.height
+        }
+
+        // Calculate arrow position for direction indicator
+        const arrowSize = Math.min(lineLength * 0.1, 5)
+        const midpoint = [
+          (lineStart[0] + lineEnd[0]) / 2,
+          depth / 2 + 0.2,
+          (lineStart[2] + lineEnd[2]) / 2,
+        ]
+
+        return (
+          <group
+            key={bend.id}
+            position={[shape.position.x, depth / 2, shape.position.y]}
+            onClick={e => {
+              e.stopPropagation()
+              if (onBendSelected) onBendSelected(bend.id)
+            }}
+          >
+            {/* Bend line - using thin box instead of line geometry */}
+            <mesh
+              position={[(lineStart[0] + lineEnd[0]) / 2, depth / 2 + 0.1, (lineStart[2] + lineEnd[2]) / 2]}
+              rotation={bend.orientation === 'horizontal' ? [0, 0, 0] : [0, Math.PI / 2, 0]}
+            >
+              <boxGeometry args={[lineLength, 0.3, 0.3]} />
+              <meshBasicMaterial color={isSelected ? '#f97316' : '#ea580c'} />
+            </mesh>
+
+            {/* Direction arrow */}
+            <mesh position={[midpoint[0], midpoint[1], midpoint[2]]}>
+              <coneGeometry
+                args={[
+                  arrowSize * 0.3,
+                  arrowSize,
+                  8,
+                ]}
+              />
+              <meshBasicMaterial color={isSelected ? '#f97316' : '#ea580c'} />
+            </mesh>
+
+            {/* Clickable area for selection */}
+            <mesh position={[(lineStart[0] + lineEnd[0]) / 2, 0, (lineStart[2] + lineEnd[2]) / 2]}>
+              {bend.orientation === 'horizontal' ? (
+                <boxGeometry args={[lineLength, depth + 1, 1]} />
+              ) : (
+                <boxGeometry args={[1, depth + 1, lineLength]} />
+              )}
+              <meshBasicMaterial transparent opacity={0} />
+            </mesh>
+
+            {/* Bend angle label */}
+            <Html
+              position={[midpoint[0], midpoint[1] + 2, midpoint[2]]}
+              center
+              distanceFactor={10}
+              style={{ pointerEvents: 'none' }}
+            >
+              <div className="px-2 py-1 bg-orange-600 text-white rounded text-xs font-bold shadow-lg">
+                {bend.angle}° {bend.direction === 'up' ? '↑' : '↓'}
+              </div>
+            </Html>
+          </group>
+        )
+      })}
+    </>
+  )
+}
+
+export default function DesignCanvas({
+  is2DView = false,
+  displayUnit = 'mm',
+  thickness = 2,
+  holePlacementMode = false,
+  onHolePlaced,
+  selectedHoleId = null,
+  onHoleSelected,
+  selectedBendId = null,
+  onBendSelected,
+}: DesignCanvasProps) {
+  const { shapes, selectShape, selectedShapeId } = useDesign()
   const [controlsEnabled, setControlsEnabled] = useState(true)
+  const [cursorPosition, setCursorPosition] = useState<{ x: number; y: number } | null>(null)
 
   const handleCanvasClick = (e: ThreeEvent<MouseEvent>) => {
     // Only deselect if clicking on the background (not a shape)
     if (e.object.type === 'GridHelper' || !e.object) {
       selectShape(null)
+      if (onHoleSelected) onHoleSelected(null)
     }
   }
+
+  // Helper to convert mm to display unit
+  const fromMm = (valueMm: number): number => {
+    switch (displayUnit) {
+      case 'mm':
+        return valueMm
+      case 'cm':
+        return valueMm / 10
+      case 'm':
+        return valueMm / 1000
+    }
+  }
+
+  const selectedShape = shapes.find(s => s.id === selectedShapeId)
 
   // Dynamic grid settings based on display unit
   const gridSettings = {
@@ -533,8 +937,59 @@ export default function DesignCanvas({ is2DView = false, displayUnit = 'mm', thi
 
   const grid = gridSettings[displayUnit]
 
+  // Component to show cursor coordinates
+  const CursorTooltip = () => {
+    const [coords, setCoords] = useState<{ x: number; y: number } | null>(null)
+    const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
+
+    useEffect(() => {
+      const interval = setInterval(() => {
+        const windowCoords = (window as any).__holePreviewCoords
+        if (windowCoords) {
+          setCoords(windowCoords)
+        } else {
+          setCoords(null)
+        }
+      }, 16) // ~60fps
+
+      const handleMouseMove = (e: MouseEvent) => {
+        setMousePos({ x: e.clientX, y: e.clientY })
+      }
+      window.addEventListener('mousemove', handleMouseMove)
+
+      return () => {
+        clearInterval(interval)
+        window.removeEventListener('mousemove', handleMouseMove)
+      }
+    }, [])
+
+    if (!coords || !holePlacementMode || !selectedShape) return null
+
+    // Convert from center-based to bottom-left based
+    const bottomLeftX = coords.x + (selectedShape.type === 'rectangle' ? (selectedShape as Rectangle).width / 2 : 0)
+    const bottomLeftY = coords.y + (selectedShape.type === 'rectangle' ? (selectedShape as Rectangle).height / 2 : 0)
+
+    return (
+      <div
+        style={{
+          position: 'fixed',
+          left: mousePos.x + 20,
+          top: mousePos.y + 20,
+          pointerEvents: 'none',
+          zIndex: 1000,
+        }}
+        className="px-3 py-2 bg-blue-600 text-white rounded-lg shadow-xl font-mono text-sm font-bold border-2 border-blue-400"
+      >
+        X: {fromMm(bottomLeftX).toFixed(1)} {displayUnit}
+        <br />
+        Y: {fromMm(bottomLeftY).toFixed(1)} {displayUnit}
+      </div>
+    )
+  }
+
   return (
-    <div className="w-full h-screen bg-slate-50">
+    <div className="w-full h-screen bg-slate-50 relative">
+      <CursorTooltip />
       <Canvas
         camera={{
           position: [50, 50, 50],
@@ -543,6 +998,7 @@ export default function DesignCanvas({ is2DView = false, displayUnit = 'mm', thi
           far: 10000,
         }}
         onPointerMissed={() => selectShape(null)}
+        style={{ cursor: holePlacementMode && selectedShapeId ? 'crosshair' : 'default' }}
       >
         {/* Camera controller for view switching */}
         <CameraController is2DView={is2DView} />
@@ -594,8 +1050,34 @@ export default function DesignCanvas({ is2DView = false, displayUnit = 'mm', thi
             is2DView={is2DView}
             setControlsEnabled={setControlsEnabled}
             thickness={thickness}
+            holePlacementMode={holePlacementMode}
+            onHolePlaced={onHolePlaced}
+            selectedHoleId={selectedHoleId}
+            onHoleSelected={onHoleSelected}
           />
         ))}
+
+        {/* Render hole labels for selected shape */}
+        {selectedShape && (
+          <HoleLabels
+            shape={selectedShape}
+            displayUnit={displayUnit}
+            fromMm={fromMm}
+            selectedHoleId={selectedHoleId}
+            onHoleSelected={onHoleSelected}
+            thickness={thickness}
+          />
+        )}
+
+        {/* Render bend lines for selected shape */}
+        {selectedShape && (
+          <BendLines
+            shape={selectedShape}
+            thickness={thickness}
+            selectedBendId={selectedBendId}
+            onBendSelected={onBendSelected}
+          />
+        )}
       </Canvas>
     </div>
   )

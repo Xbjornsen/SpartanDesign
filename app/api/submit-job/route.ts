@@ -2,14 +2,20 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { Shape, Material } from '@/lib/types'
 import { calculateQuote, formatQuoteForEmail } from '@/lib/quoteCalculation'
-
-const resend = new Resend(process.env.RESEND_API_KEY)
+import { exportBendInstructionsText } from '@/lib/exportSVG'
 
 // Engineer's email - can be configured via environment variable
 const ENGINEER_EMAIL = process.env.ENGINEER_EMAIL || 'engineer@spartandesign.com'
 
 export async function POST(request: NextRequest) {
   try {
+    // Initialize Resend with API key (only when route is called)
+    const apiKey = process.env.RESEND_API_KEY
+    if (!apiKey) {
+      return NextResponse.json({ error: 'Email service not configured' }, { status: 500 })
+    }
+    const resend = new Resend(apiKey)
+
     const body = await request.json()
     const { customerDetails, shapes, material, svgContent } = body
 
@@ -21,6 +27,18 @@ export async function POST(request: NextRequest) {
     // Calculate quote
     const quote = calculateQuote(shapes as Shape[], material as Material)
     const quoteText = formatQuoteForEmail(quote)
+
+    // Check for bends and holes
+    const totalBends = (shapes as Shape[]).reduce(
+      (sum, shape) => sum + (shape.bends?.length || 0),
+      0
+    )
+    const totalHoles = (shapes as Shape[]).reduce(
+      (sum, shape) => sum + (shape.holes?.length || 0),
+      0
+    )
+    const hasBends = totalBends > 0
+    const hasHoles = totalHoles > 0
 
     // Prepare email HTML content
     const emailHtml = `
@@ -162,7 +180,49 @@ export async function POST(request: NextRequest) {
         <span class="info-label">Number of Shapes:</span>
         <span class="info-value">${shapes.length}</span>
       </div>
+      ${
+        hasHoles
+          ? `
+      <div class="info-row">
+        <span class="info-label">Total Holes:</span>
+        <span class="info-value">${totalHoles}</span>
+      </div>
+      `
+          : ''
+      }
+      ${
+        hasBends
+          ? `
+      <div class="info-row">
+        <span class="info-label">Sheet Metal Bends:</span>
+        <span class="info-value" style="color: #ea580c; font-weight: bold;">${totalBends} bend(s) required</span>
+      </div>
+      `
+          : ''
+      }
     </div>
+
+    ${
+      hasBends
+        ? `
+    <div class="section">
+      <div class="section-title">🔧 Bend Instructions</div>
+      <p style="color: #ea580c; font-weight: bold; margin-bottom: 10px;">⚠️ This design requires sheet metal bending operations</p>
+      <p>Step-by-step bend instructions are attached as a plain text file (.txt). Each bend includes:</p>
+      <ul style="margin: 10px 0; padding-left: 20px;">
+        <li>Bend line position and orientation</li>
+        <li>Bend angle and direction</li>
+        <li>Inside bend radius</li>
+        <li>Detailed step-by-step procedure</li>
+        <li>Sheet dimensions and important notes</li>
+      </ul>
+      <p style="font-style: italic; color: #6b7280; font-size: 14px;">
+        Bend lines are also marked on the SVG file with orange dashed lines and annotations.
+      </p>
+    </div>
+    `
+        : ''
+    }
 
     <div class="section">
       <div class="section-title">💰 Quote Details</div>
@@ -204,20 +264,33 @@ export async function POST(request: NextRequest) {
 </html>
     `
 
-    // Send email with SVG attachment
+    // Prepare attachments
+    const attachments: any[] = [
+      {
+        filename: `design-${Date.now()}.svg`,
+        content: Buffer.from(svgContent).toString('base64'),
+        contentType: 'image/svg+xml',
+      },
+    ]
+
+    // Add bend instructions as plain text if there are bends
+    if (hasBends) {
+      const bendInstructionsText = exportBendInstructionsText(shapes as Shape[])
+      attachments.push({
+        filename: `bend-instructions-${Date.now()}.txt`,
+        content: Buffer.from(bendInstructionsText).toString('base64'),
+        contentType: 'text/plain',
+      })
+    }
+
+    // Send email with attachments
     const { data, error } = await resend.emails.send({
       from: 'Spartan Design <onboarding@resend.dev>',
       to: [ENGINEER_EMAIL],
       replyTo: customerDetails.email,
-      subject: `New Job Request from ${customerDetails.fullName} - ${material.name} ${material.thickness}${material.unit}`,
+      subject: `New Job Request from ${customerDetails.fullName} - ${material.name} ${material.thickness}${material.unit}${hasBends ? ' [BENDING REQUIRED]' : ''}`,
       html: emailHtml,
-      attachments: [
-        {
-          filename: `design-${Date.now()}.svg`,
-          content: Buffer.from(svgContent).toString('base64'),
-          contentType: 'image/svg+xml',
-        },
-      ],
+      attachments,
     })
 
     if (error) {

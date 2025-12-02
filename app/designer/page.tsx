@@ -14,10 +14,11 @@ import {
   Text as TextShape,
   Material,
   Hole,
+  Bend,
   ShapeType,
   Shape,
 } from '@/lib/types'
-import { exportToSVG, downloadSVG } from '@/lib/exportSVG'
+import { exportToSVG, downloadSVG, exportBendInstructions, downloadBendInstructions } from '@/lib/exportSVG'
 import ShapePalette from '@/components/ShapePalette'
 import SubmitJobModal, { CustomerDetails } from '@/components/SubmitJobModal'
 
@@ -102,9 +103,13 @@ function DesignerContent() {
     updateShape,
     removeShape,
     selectShape,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
   } = useDesign()
-  const [defaultWidth, setDefaultWidth] = useState(2)
-  const [defaultLength, setDefaultLength] = useState(2)
+  const [defaultWidth, setDefaultWidth] = useState(100)
+  const [defaultLength, setDefaultLength] = useState(150)
   const [is2DView, setIs2DView] = useState(true)
   const [selectedMetalType, setSelectedMetalType] = useState('Mild Steel')
   const [selectedThickness, setSelectedThickness] = useState(2)
@@ -120,6 +125,23 @@ function DesignerContent() {
   // Hole editing states
   const [editingHoleId, setEditingHoleId] = useState<string | null>(null)
 
+  // Hole placement mode states
+  const [holePlacementMode, setHolePlacementMode] = useState(false)
+  const [selectedHoleId, setSelectedHoleId] = useState<string | null>(null)
+  const [lastHoleDiameterMm, setLastHoleDiameterMm] = useState(5) // Remember last used diameter
+  const [cornerHoleOffset, setCornerHoleOffset] = useState(10) // Offset from edges for corner holes (in current display unit)
+
+  // Snap to grid state
+  const [snapToGrid, setSnapToGrid] = useState<'off' | 'center' | '1mm' | '0.05in'>('off')
+
+  // Bend creation states
+  const [newBendPosition, setNewBendPosition] = useState(50) // Distance from edge in display units
+  const [newBendOrientation, setNewBendOrientation] = useState<'horizontal' | 'vertical'>('horizontal')
+  const [newBendAngle, setNewBendAngle] = useState(90)
+  const [newBendDirection, setNewBendDirection] = useState<'up' | 'down'>('up')
+  const [newBendRadius, setNewBendRadius] = useState(2) // Default to material thickness
+  const [selectedBendId, setSelectedBendId] = useState<string | null>(null)
+
   // Text editing states
   const [textContent, setTextContent] = useState('TEXT')
   const [textFontSize, setTextFontSize] = useState(10)
@@ -132,11 +154,22 @@ function DesignerContent() {
     text: string
   } | null>(null)
 
+  // Quote calculator modal states
+  const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false)
+  const [quoteQuantity, setQuoteQuantity] = useState(1)
+
   // Collapsible section states
   const [isToolsCollapsed, setIsToolsCollapsed] = useState(false)
   const [isShapeLibraryCollapsed, setIsShapeLibraryCollapsed] = useState(true)
 
   const selectedShape = shapes.find(s => s.id === selectedShapeId)
+
+  // Sync bend orientation with existing bends when shape is selected
+  useEffect(() => {
+    if (selectedShape && selectedShape.bends && selectedShape.bends.length > 0) {
+      setNewBendOrientation(selectedShape.bends[0].orientation)
+    }
+  }, [selectedShapeId, selectedShape])
 
   // Unit conversion functions (internal storage is always in mm)
   const toMm = (value: number, unit: 'mm' | 'cm' | 'm'): number => {
@@ -192,6 +225,32 @@ function DesignerContent() {
       setMaterial(matchingMaterial)
     }
   }
+
+  // Keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+Z or Cmd+Z for undo
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault()
+        if (canUndo) {
+          undo()
+        }
+      }
+      // Ctrl+Shift+Z or Cmd+Shift+Z or Ctrl+Y for redo
+      else if (
+        ((e.ctrlKey || e.metaKey) && e.key === 'z' && e.shiftKey) ||
+        ((e.ctrlKey || e.metaKey) && e.key === 'y')
+      ) {
+        e.preventDefault()
+        if (canRedo) {
+          redo()
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [undo, redo, canUndo, canRedo])
 
   // Sync dimension inputs when a shape is selected (convert from mm to display unit)
   useEffect(() => {
@@ -443,6 +502,164 @@ function DesignerContent() {
     if (editingHoleId === holeId) {
       setEditingHoleId(null)
     }
+    if (selectedHoleId === holeId) {
+      setSelectedHoleId(null)
+    }
+  }
+
+  // Helper: Convert hole position from center-based to bottom-left based
+  const holeToBottomLeft = (holePosX: number, holePosY: number, shape: Shape): { x: number; y: number } => {
+    if (shape.type === 'rectangle') {
+      const rect = shape as Rectangle
+      return {
+        x: holePosX + rect.width / 2,
+        y: holePosY + rect.height / 2,
+      }
+    }
+    // For other shapes, return as-is (centered)
+    return { x: holePosX, y: holePosY }
+  }
+
+  // Helper: Convert hole position from bottom-left to center-based
+  const bottomLeftToHole = (bottomLeftX: number, bottomLeftY: number, shape: Shape): { x: number; y: number } => {
+    if (shape.type === 'rectangle') {
+      const rect = shape as Rectangle
+      return {
+        x: bottomLeftX - rect.width / 2,
+        y: bottomLeftY - rect.height / 2,
+      }
+    }
+    // For other shapes, return as-is (centered)
+    return { x: bottomLeftX, y: bottomLeftY }
+  }
+
+  // Helper: Apply snap to grid
+  const applySnapToGrid = (value: number): number => {
+    if (snapToGrid === 'off') return value
+    if (snapToGrid === 'center') return 0 // Snap to center of shape
+    const gridSize = snapToGrid === '1mm' ? 1 : 1.27 // 0.05 inches = 1.27mm
+    return Math.round(value / gridSize) * gridSize
+  }
+
+  // Handle click-to-place hole on canvas
+  const handleCanvasClickForHole = (clickX: number, clickY: number) => {
+    if (!holePlacementMode || !selectedShape) return
+
+    // Apply snap to grid
+    const snappedX = applySnapToGrid(clickX)
+    const snappedY = applySnapToGrid(clickY)
+
+    // Use last used diameter (defaults to 5mm on first use)
+    const newHole: Hole = {
+      id: `hole-${Date.now()}`,
+      type: 'circle',
+      position: { x: snappedX, y: snappedY },
+      radius: lastHoleDiameterMm / 2,
+    }
+
+    const updatedHoles = [...(selectedShape.holes || []), newHole]
+    updateShape(selectedShape.id, { holes: updatedHoles } as Partial<typeof selectedShape>)
+    setSelectedHoleId(newHole.id)
+  }
+
+  // Toggle hole placement mode
+  const handleToggleHolePlacementMode = () => {
+    setHolePlacementMode(!holePlacementMode)
+    setSelectedHoleId(null)
+  }
+
+  // Add 4 corner holes automatically
+  const handleAddCornerHoles = () => {
+    if (!selectedShape || selectedShape.type !== 'rectangle') return
+
+    const rect = selectedShape as Rectangle
+    const offsetMm = toMm(cornerHoleOffset, displayUnit)
+
+    // Calculate corner positions from bottom-left
+    const corners = [
+      { x: offsetMm, y: offsetMm, name: 'Bottom-Left' }, // Bottom-left
+      { x: rect.width - offsetMm, y: offsetMm, name: 'Bottom-Right' }, // Bottom-right
+      { x: rect.width - offsetMm, y: rect.height - offsetMm, name: 'Top-Right' }, // Top-right
+      { x: offsetMm, y: rect.height - offsetMm, name: 'Top-Left' }, // Top-left
+    ]
+
+    // Convert to center-based coordinates
+    const newHoles: Hole[] = corners.map((corner, index) => ({
+      id: `hole-corner-${Date.now()}-${index}`,
+      type: 'circle',
+      position: bottomLeftToHole(corner.x, corner.y, selectedShape),
+      radius: lastHoleDiameterMm / 2,
+    }))
+
+    const updatedHoles = [...(selectedShape.holes || []), ...newHoles]
+    updateShape(selectedShape.id, { holes: updatedHoles } as Partial<typeof selectedShape>)
+  }
+
+  // Update hole position from bottom-left coordinates (in display units)
+  const handleUpdateHolePositionBottomLeft = (holeId: string, xBottomLeft: number, yBottomLeft: number) => {
+    if (!selectedShape) return
+    const xMm = toMm(xBottomLeft, displayUnit)
+    const yMm = toMm(yBottomLeft, displayUnit)
+    const centerPos = bottomLeftToHole(xMm, yMm, selectedShape)
+    handleUpdateHole(holeId, { position: centerPos })
+  }
+
+  // Update hole diameter from dropdown or custom input (in mm or inches based on displayUnit)
+  const handleUpdateHoleDiameter = (holeId: string, diameter: number) => {
+    const diameterMm = toMm(diameter, displayUnit)
+    handleUpdateHole(holeId, { radius: diameterMm / 2 })
+    // Remember this diameter for next hole
+    setLastHoleDiameterMm(diameterMm)
+  }
+
+  // Bend handlers
+  const handleAddBend = () => {
+    if (!selectedShape || selectedShape.type !== 'rectangle') return
+
+    // Check if there are existing bends with different orientation
+    const existingBends = selectedShape.bends || []
+    if (existingBends.length > 0) {
+      const existingOrientation = existingBends[0].orientation
+      if (existingOrientation !== newBendOrientation) {
+        alert(`Cannot mix horizontal and vertical bends. This shape already has ${existingOrientation} bends.`)
+        return
+      }
+    }
+
+    const positionMm = toMm(newBendPosition, displayUnit)
+    const radiusMm = toMm(newBendRadius, displayUnit)
+
+    const newBend: Bend = {
+      id: `bend-${Date.now()}`,
+      position: positionMm,
+      orientation: newBendOrientation,
+      angle: newBendAngle,
+      direction: newBendDirection,
+      radius: radiusMm,
+    }
+
+    const updatedBends = [...(selectedShape.bends || []), newBend]
+    updateShape(selectedShape.id, { bends: updatedBends } as Partial<typeof selectedShape>)
+    setSelectedBendId(newBend.id)
+  }
+
+  const handleUpdateBend = (bendId: string, updates: Partial<Bend>) => {
+    if (!selectedShape) return
+
+    const updatedBends = (selectedShape.bends || []).map(bend =>
+      bend.id === bendId ? { ...bend, ...updates } : bend
+    )
+    updateShape(selectedShape.id, { bends: updatedBends } as Partial<typeof selectedShape>)
+  }
+
+  const handleDeleteBend = (bendId: string) => {
+    if (!selectedShape) return
+
+    const updatedBends = (selectedShape.bends || []).filter(bend => bend.id !== bendId)
+    updateShape(selectedShape.id, { bends: updatedBends } as Partial<typeof selectedShape>)
+    if (selectedBendId === bendId) {
+      setSelectedBendId(null)
+    }
   }
 
   const handleExportSVG = () => {
@@ -456,6 +673,70 @@ function DesignerContent() {
       downloadSVG(svgContent, `design-${Date.now()}.svg`)
     } catch (error) {
       alert('Error exporting SVG: ' + (error as Error).message)
+    }
+  }
+
+  const handleExportBendInstructions = () => {
+    // Check if any shapes have bends
+    const hasBends = shapes.some(shape => shape.bends && shape.bends.length > 0)
+    if (!hasBends) {
+      alert('No bend instructions to export. Please add bends to your design first.')
+      return
+    }
+
+    try {
+      const jsonContent = exportBendInstructions(shapes)
+      downloadBendInstructions(jsonContent, `bend-instructions-${Date.now()}.json`)
+    } catch (error) {
+      alert('Error exporting bend instructions: ' + (error as Error).message)
+    }
+  }
+
+  // Calculate quote
+  const calculateQuote = (quantity: number = 1) => {
+    if (shapes.length === 0) return null
+
+    const LASER_CUTTING_BASE = 50 // $50 flat rate for laser cutting
+    const BEND_COST = 50 // $50 per bend
+
+    let totalArea = 0 // in square mm
+    let totalBends = 0
+
+    shapes.forEach(shape => {
+      // Calculate area based on shape type
+      if (shape.type === 'rectangle') {
+        const rect = shape as Rectangle
+        totalArea += rect.width * rect.height
+      } else if (shape.type === 'circle') {
+        const circle = shape as Circle
+        totalArea += Math.PI * circle.radius * circle.radius
+      }
+
+      // Count bends
+      if (shape.bends) {
+        totalBends += shape.bends.length
+      }
+    })
+
+    // Convert area to square meters
+    const areaInSquareMeters = totalArea / 1000000
+
+    // Calculate costs
+    const materialCost = areaInSquareMeters * material.pricePerSquareMeter
+    const cuttingCost = LASER_CUTTING_BASE
+    const bendCost = totalBends * BEND_COST
+    const subtotal = materialCost + cuttingCost + bendCost
+    const total = subtotal * quantity
+
+    return {
+      quantity,
+      materialCost,
+      cuttingCost,
+      bendCost,
+      subtotal,
+      total,
+      totalBends,
+      totalArea: areaInSquareMeters,
     }
   }
 
@@ -503,7 +784,7 @@ function DesignerContent() {
       setIsSubmitModalOpen(false)
       setSubmitMessage({
         type: 'success',
-        text: 'Job submitted successfully! We will contact you shortly with a detailed quote.',
+        text: 'Job submitted successfully!',
       })
       setTimeout(() => setSubmitMessage(null), 10000)
     } catch (error) {
@@ -570,6 +851,17 @@ function DesignerContent() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
             <span className="text-white">Export SVG</span>
+          </button>
+
+          {/* Quote Calculator Button */}
+          <button
+            onClick={() => setIsQuoteModalOpen(true)}
+            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all shadow-md font-semibold flex items-center gap-2 border-2 border-green-700"
+          >
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+            <span className="text-white">Get Quote</span>
           </button>
 
           {/* Submit Job Button */}
@@ -680,73 +972,6 @@ function DesignerContent() {
           </div>
 
           <h2 className="font-heading text-lg font-bold mb-3 text-neutral-900 flex items-center gap-2">
-            <svg className="w-5 h-5 text-secondary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
-            </svg>
-            Material Selection
-          </h2>
-          <div className="space-y-2">
-            <label className="flex items-center p-3 border border-neutral-300 rounded-lg cursor-pointer hover:bg-neutral-50 transition bg-white shadow-sm">
-              <input
-                type="radio"
-                name="metalType"
-                value="Mild Steel"
-                checked={selectedMetalType === 'Mild Steel'}
-                onChange={e => handleMetalTypeChange(e.target.value)}
-                className="mr-3 w-4 h-4 accent-primary-500"
-              />
-              <span className="font-medium text-neutral-900">Mild Steel</span>
-            </label>
-            <label className="flex items-center p-3 border border-neutral-300 rounded-lg cursor-pointer hover:bg-neutral-50 transition bg-white shadow-sm">
-              <input
-                type="radio"
-                name="metalType"
-                value="Stainless Steel"
-                checked={selectedMetalType === 'Stainless Steel'}
-                onChange={e => handleMetalTypeChange(e.target.value)}
-                className="mr-3 w-4 h-4 accent-primary-500"
-              />
-              <span className="font-medium text-neutral-900">
-                Stainless Steel
-              </span>
-            </label>
-            <label className="flex items-center p-3 border border-neutral-300 rounded-lg cursor-pointer hover:bg-neutral-50 transition bg-white shadow-sm">
-              <input
-                type="radio"
-                name="metalType"
-                value="Aluminium"
-                checked={selectedMetalType === 'Aluminium'}
-                onChange={e => handleMetalTypeChange(e.target.value)}
-                className="mr-3 w-4 h-4 accent-primary-500"
-              />
-              <span className="font-medium text-neutral-900">Aluminium</span>
-            </label>
-          </div>
-
-          <h2 className="text-lg font-semibold mt-6 mb-4 text-neutral-900">
-            Thickness
-          </h2>
-          <select
-            value={selectedThickness}
-            onChange={e => handleThicknessChange(parseFloat(e.target.value))}
-            className="w-full px-4 py-2 border border-neutral-300 rounded-lg bg-white text-neutral-900 shadow-sm"
-          >
-            {availableThicknesses.map(thickness => {
-              return (
-                <option key={thickness} value={thickness}>
-                  {thickness}mm
-                </option>
-              )
-            })}
-          </select>
-
-          <div className="mt-3 p-3 bg-accent-50 rounded-lg border border-accent-200">
-            <p className="text-sm text-neutral-800">
-              <strong>Selected:</strong> {material.name} {material.thickness}mm
-            </p>
-          </div>
-
-          <h2 className="font-heading text-lg font-bold mt-6 mb-3 text-neutral-900 flex items-center gap-2">
             <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
             </svg>
@@ -902,6 +1127,73 @@ function DesignerContent() {
             </p>
           )}
 
+          <h2 className="font-heading text-lg font-bold mt-6 mb-3 text-neutral-900 flex items-center gap-2">
+            <svg className="w-5 h-5 text-secondary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+            </svg>
+            Material Selection
+          </h2>
+          <div className="space-y-2">
+            <label className="flex items-center p-3 border border-neutral-300 rounded-lg cursor-pointer hover:bg-neutral-50 transition bg-white shadow-sm">
+              <input
+                type="radio"
+                name="metalType"
+                value="Mild Steel"
+                checked={selectedMetalType === 'Mild Steel'}
+                onChange={e => handleMetalTypeChange(e.target.value)}
+                className="mr-3 w-4 h-4 accent-primary-500"
+              />
+              <span className="font-medium text-neutral-900">Mild Steel</span>
+            </label>
+            <label className="flex items-center p-3 border border-neutral-300 rounded-lg cursor-pointer hover:bg-neutral-50 transition bg-white shadow-sm">
+              <input
+                type="radio"
+                name="metalType"
+                value="Stainless Steel"
+                checked={selectedMetalType === 'Stainless Steel'}
+                onChange={e => handleMetalTypeChange(e.target.value)}
+                className="mr-3 w-4 h-4 accent-primary-500"
+              />
+              <span className="font-medium text-neutral-900">
+                Stainless Steel
+              </span>
+            </label>
+            <label className="flex items-center p-3 border border-neutral-300 rounded-lg cursor-pointer hover:bg-neutral-50 transition bg-white shadow-sm">
+              <input
+                type="radio"
+                name="metalType"
+                value="Aluminium"
+                checked={selectedMetalType === 'Aluminium'}
+                onChange={e => handleMetalTypeChange(e.target.value)}
+                className="mr-3 w-4 h-4 accent-primary-500"
+              />
+              <span className="font-medium text-neutral-900">Aluminium</span>
+            </label>
+          </div>
+
+          <h2 className="text-lg font-semibold mt-6 mb-4 text-neutral-900">
+            Thickness
+          </h2>
+          <select
+            value={selectedThickness}
+            onChange={e => handleThicknessChange(parseFloat(e.target.value))}
+            className="w-full px-4 py-2 border border-neutral-300 rounded-lg bg-white text-neutral-900 shadow-sm"
+          >
+            {availableThicknesses.map(thickness => {
+              return (
+                <option key={thickness} value={thickness}>
+                  {thickness}mm
+                </option>
+              )
+            })}
+          </select>
+
+          <div className="mt-3 p-3 bg-accent-50 rounded-lg border border-accent-200">
+            <p className="text-sm text-neutral-800">
+              <strong>Selected:</strong> {material.name} {material.thickness}mm
+            </p>
+          </div>
+
           {selectedShape && (
             <>
               <h2 className="font-heading text-lg font-bold mt-6 mb-3 text-neutral-900 flex items-center gap-2">
@@ -929,332 +1221,434 @@ function DesignerContent() {
                 </button>
               </div>
 
+              {/* Hole Placement Mode Button */}
               <h2 className="font-heading text-lg font-bold mt-6 mb-3 text-neutral-900 flex items-center gap-2">
                 <svg className="w-5 h-5 text-accent-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                Add Hole
+                Holes
               </h2>
-              <div className="space-y-3 p-3 bg-neutral-50 rounded-lg border border-neutral-300 shadow-sm">
-                <div>
-                  <label className="block text-xs mb-1 font-medium text-neutral-900">
-                    Hole Type
-                  </label>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleAddHole('circle')}
-                      className="flex-1 px-3 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg text-sm transition shadow-sm font-semibold"
-                    >
-                      + Circle
-                    </button>
-                    <button
-                      onClick={() => handleAddHole('rectangle')}
-                      className="flex-1 px-3 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg text-sm transition shadow-sm font-semibold"
-                    >
-                      + Rectangle
-                    </button>
-                  </div>
-                </div>
+              <div className="space-y-2">
+                <button
+                  onClick={handleToggleHolePlacementMode}
+                  className={`w-full px-4 py-2 rounded-lg transition shadow-sm font-semibold ${
+                    holePlacementMode
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                      : 'bg-slate-600 hover:bg-slate-700 text-white'
+                  }`}
+                >
+                  {holePlacementMode ? '✓ Hole Placement Mode Active' : 'Add Hole'}
+                </button>
+                {holePlacementMode && (
+                  <p className="text-xs text-blue-600 font-medium">
+                    Click inside the shape to place a hole
+                  </p>
+                )}
 
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-xs mb-1 font-medium text-neutral-900">
-                      Circle Ø ({displayUnit})
+                {/* Add 4 Corner Holes Button */}
+                {selectedShape?.type === 'rectangle' && (
+                  <div className="p-3 bg-slate-50 rounded-lg border border-slate-300">
+                    <label className="block text-xs mb-2 font-medium text-neutral-900">
+                      Add 4 Corner Holes
                     </label>
-                    <input
-                      type="number"
-                      value={newHoleDiameter}
-                      onChange={e => {
-                        const val = parseFloat(e.target.value)
-                        if (!isNaN(val)) setNewHoleDiameter(val)
-                      }}
-                      className="w-full px-2 py-1 border border-neutral-300 rounded-lg text-sm bg-white text-neutral-900"
-                      step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
-                      min={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
-                    />
+                    <div className="space-y-2">
+                      <div>
+                        <label className="block text-xs mb-1 text-neutral-700">
+                          Hole Diameter ({displayUnit})
+                        </label>
+                        <input
+                          type="number"
+                          value={fromMm(lastHoleDiameterMm, displayUnit).toFixed(2)}
+                          onChange={e => {
+                            const val = parseFloat(e.target.value)
+                            if (!isNaN(val) && val > 0) setLastHoleDiameterMm(toMm(val, displayUnit))
+                          }}
+                          className="w-full px-2 py-1 border border-neutral-300 rounded-lg text-sm bg-white text-neutral-900"
+                          step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.1' : '0.1'}
+                          min={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.1' : '0.1'}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs mb-1 text-neutral-700">
+                          Offset from edges ({displayUnit})
+                        </label>
+                        <input
+                          type="number"
+                          value={cornerHoleOffset}
+                          onChange={e => setCornerHoleOffset(parseFloat(e.target.value) || 0)}
+                          className="w-full px-2 py-1 border border-neutral-300 rounded-lg text-sm bg-white text-neutral-900"
+                          step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.1' : '1'}
+                          min="0"
+                        />
+                      </div>
+                      <button
+                        onClick={handleAddCornerHoles}
+                        className="w-full px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold shadow-sm"
+                      >
+                        Add 4 Corner Holes
+                      </button>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-xs mb-1 font-medium text-neutral-900">
-                      Rect W ({displayUnit})
-                    </label>
-                    <input
-                      type="number"
-                      value={newHoleWidth}
-                      onChange={e => {
-                        const val = parseFloat(e.target.value)
-                        if (!isNaN(val)) setNewHoleWidth(val)
-                      }}
-                      className="w-full px-2 py-1 border border-neutral-300 rounded-lg text-sm bg-white text-neutral-900"
-                      step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
-                      min={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <label className="block text-xs mb-1 font-medium text-neutral-900">
-                      Rect H ({displayUnit})
-                    </label>
-                    <input
-                      type="number"
-                      value={newHoleHeight}
-                      onChange={e => {
-                        const val = parseFloat(e.target.value)
-                        if (!isNaN(val)) setNewHoleHeight(val)
-                      }}
-                      className="w-full px-2 py-1 border border-neutral-300 rounded-lg text-sm bg-white text-neutral-900"
-                      step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
-                      min={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-xs mb-1 font-medium text-neutral-900">
-                      Position X ({displayUnit})
-                    </label>
-                    <input
-                      type="number"
-                      value={newHoleX}
-                      onChange={e => {
-                        const val = parseFloat(e.target.value)
-                        if (!isNaN(val)) setNewHoleX(val)
-                      }}
-                      className="w-full px-2 py-1 border border-neutral-300 rounded-lg text-sm bg-white text-neutral-900"
-                      step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs mb-1 font-medium text-neutral-900">
-                      Position Y ({displayUnit})
-                    </label>
-                    <input
-                      type="number"
-                      value={newHoleY}
-                      onChange={e => {
-                        const val = parseFloat(e.target.value)
-                        if (!isNaN(val)) setNewHoleY(val)
-                      }}
-                      className="w-full px-2 py-1 border border-neutral-300 rounded-lg text-sm bg-white text-neutral-900"
-                      step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
-                    />
-                  </div>
-                </div>
-
-                <p className="text-xs text-neutral-500 italic">
-                  Position is relative to shape center (0,0)
-                </p>
+                )}
               </div>
 
-              {selectedShape.holes && selectedShape.holes.length > 0 && (
-                <>
-                  <h2 className="font-heading text-lg font-bold mt-6 mb-3 text-neutral-900 flex items-center gap-2">
-                    <svg className="w-5 h-5 text-secondary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Holes ({selectedShape.holes.length})
-                  </h2>
-                  <div className="space-y-2">
-                    {selectedShape.holes.map((hole, index) => (
-                      <div
-                        key={hole.id}
-                        className="p-3 bg-neutral-50 rounded-lg border border-neutral-300 shadow-sm"
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <span className="text-sm font-medium text-neutral-900">
-                            {hole.type === 'circle' ? 'Circle' : 'Rectangle'} Hole {index + 1}
-                          </span>
-                          <button
-                            onClick={() => handleDeleteHole(hole.id)}
-                            className="px-2 py-1 bg-rose-500 hover:bg-rose-600 text-white rounded-lg text-xs transition shadow-sm"
-                          >
-                            Delete
-                          </button>
-                        </div>
+              {/* Snap to Grid Toggle */}
+              <div className="mt-3">
+                <label className="block text-sm mb-1 font-medium text-neutral-900">
+                  Snap to Grid
+                </label>
+                <select
+                  value={snapToGrid}
+                  onChange={e => setSnapToGrid(e.target.value as 'off' | 'center' | '1mm' | '0.05in')}
+                  className="w-full px-3 py-2 border border-neutral-300 rounded-lg bg-white text-neutral-900 shadow-sm"
+                >
+                  <option value="off">Off</option>
+                  <option value="center">Center</option>
+                  <option value="1mm">1 mm</option>
+                  <option value="0.05in">0.05 in</option>
+                </select>
+              </div>
 
-                        {editingHoleId === hole.id ? (
-                          <div className="space-y-2">
-                            {hole.type === 'circle' ? (
-                              <div>
-                                <label className="block text-xs mb-1 text-neutral-900">
-                                  Diameter ({displayUnit})
-                                </label>
-                                <input
-                                  type="number"
-                                  value={hole.radius ? fromMm(hole.radius * 2, displayUnit) : 0}
-                                  onChange={e => {
-                                    const val = parseFloat(e.target.value)
-                                    if (!isNaN(val)) {
-                                      const diameterMm = toMm(val, displayUnit)
-                                      handleUpdateHole(hole.id, { radius: diameterMm / 2 })
-                                    }
-                                  }}
-                                  className="w-full px-2 py-1 border border-neutral-300 rounded-lg text-sm bg-white text-neutral-900"
-                                  step={
-                                    displayUnit === 'm'
-                                      ? '0.001'
-                                      : displayUnit === 'cm'
-                                        ? '0.01'
-                                        : '0.1'
-                                  }
-                                  min={
-                                    displayUnit === 'm'
-                                      ? '0.001'
-                                      : displayUnit === 'cm'
-                                        ? '0.01'
-                                        : '0.1'
-                                  }
-                                />
-                              </div>
-                            ) : (
-                              <>
-                                <div>
-                                  <label className="block text-xs mb-1 text-neutral-900">
-                                    Width ({displayUnit})
-                                  </label>
-                                  <input
-                                    type="number"
-                                    value={fromMm(hole.width || 0, displayUnit)}
-                                    onChange={e => {
-                                      const val = parseFloat(e.target.value)
-                                      if (!isNaN(val)) {
-                                        const widthMm = toMm(val, displayUnit)
-                                        handleUpdateHole(hole.id, { width: widthMm })
-                                      }
-                                    }}
-                                    className="w-full px-2 py-1 border border-neutral-300 rounded-lg text-sm bg-white text-neutral-900"
-                                    step={
-                                      displayUnit === 'm'
-                                        ? '0.001'
-                                        : displayUnit === 'cm'
-                                          ? '0.01'
-                                          : '0.1'
-                                    }
-                                    min={
-                                      displayUnit === 'm'
-                                        ? '0.001'
-                                        : displayUnit === 'cm'
-                                          ? '0.01'
-                                          : '0.1'
-                                    }
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-xs mb-1 text-neutral-900">
-                                    Height ({displayUnit})
-                                  </label>
-                                  <input
-                                    type="number"
-                                    value={fromMm(hole.height || 0, displayUnit)}
-                                    onChange={e => {
-                                      const val = parseFloat(e.target.value)
-                                      if (!isNaN(val)) {
-                                        const heightMm = toMm(val, displayUnit)
-                                        handleUpdateHole(hole.id, { height: heightMm })
-                                      }
-                                    }}
-                                    className="w-full px-2 py-1 border border-neutral-300 rounded-lg text-sm bg-white text-neutral-900"
-                                    step={
-                                      displayUnit === 'm'
-                                        ? '0.001'
-                                        : displayUnit === 'cm'
-                                          ? '0.01'
-                                          : '0.1'
-                                    }
-                                    min={
-                                      displayUnit === 'm'
-                                        ? '0.001'
-                                        : displayUnit === 'cm'
-                                          ? '0.01'
-                                          : '0.1'
-                                    }
-                                  />
-                                </div>
-                              </>
-                            )}
-                            <div className="grid grid-cols-2 gap-2">
-                              <div>
-                                <label className="block text-xs mb-1 text-neutral-900">
-                                  Position X ({displayUnit})
-                                </label>
-                                <input
-                                  type="number"
-                                  value={fromMm(hole.position.x, displayUnit)}
-                                  onChange={e => {
-                                    const val = parseFloat(e.target.value)
-                                    if (!isNaN(val)) {
-                                      const xMm = toMm(val, displayUnit)
-                                      handleUpdateHole(hole.id, {
-                                        position: { ...hole.position, x: xMm },
-                                      })
-                                    }
-                                  }}
-                                  className="w-full px-2 py-1 border border-neutral-300 rounded-lg text-sm bg-white text-neutral-900"
-                                  step={
-                                    displayUnit === 'm'
-                                      ? '0.001'
-                                      : displayUnit === 'cm'
-                                        ? '0.01'
-                                        : '0.1'
-                                  }
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-xs mb-1 text-neutral-900">
-                                  Position Y ({displayUnit})
-                                </label>
-                                <input
-                                  type="number"
-                                  value={fromMm(hole.position.y, displayUnit)}
-                                  onChange={e => {
-                                    const val = parseFloat(e.target.value)
-                                    if (!isNaN(val)) {
-                                      const yMm = toMm(val, displayUnit)
-                                      handleUpdateHole(hole.id, {
-                                        position: { ...hole.position, y: yMm },
-                                      })
-                                    }
-                                  }}
-                                  className="w-full px-2 py-1 border border-neutral-300 rounded-lg text-sm bg-white text-neutral-900"
-                                  step={
-                                    displayUnit === 'm'
-                                      ? '0.001'
-                                      : displayUnit === 'cm'
-                                        ? '0.01'
-                                        : '0.1'
-                                  }
-                                />
-                              </div>
-                            </div>
-                            <button
-                              onClick={() => setEditingHoleId(null)}
-                              className="w-full px-3 py-1 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm transition shadow-sm"
-                            >
-                              Done Editing
-                            </button>
-                          </div>
-                        ) : (
-                          <div>
-                            <p className="text-xs text-neutral-700">
-                              {hole.type === 'circle'
-                                ? `Ø ${hole.radius ? fromMm(hole.radius * 2, displayUnit).toFixed(2) : 0}${displayUnit}`
-                                : `${fromMm(hole.width || 0, displayUnit).toFixed(2)} × ${fromMm(hole.height || 0, displayUnit).toFixed(2)}${displayUnit}`}
-                            </p>
-                            <p className="text-xs text-neutral-700">
-                              Position: ({fromMm(hole.position.x, displayUnit).toFixed(2)},{' '}
-                              {fromMm(hole.position.y, displayUnit).toFixed(2)}){displayUnit}
-                            </p>
-                            <button
-                              onClick={() => setEditingHoleId(hole.id)}
-                              className="mt-2 w-full px-3 py-1 bg-accent-500 hover:bg-accent-600 text-white rounded-lg text-sm transition shadow-sm"
-                            >
-                              Edit
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+              {/* Selected Hole Control Panel */}
+              {selectedHoleId && selectedShape && selectedShape.holes && (() => {
+                const selectedHole = selectedShape.holes.find(h => h.id === selectedHoleId)
+                if (!selectedHole || selectedHole.type !== 'circle') return null
+
+                const bottomLeftPos = holeToBottomLeft(selectedHole.position.x, selectedHole.position.y, selectedShape)
+                const diameterMm = (selectedHole.radius || 0) * 2
+
+                // Define diameter presets based on unit
+                const diameterPresets = displayUnit === 'mm'
+                  ? [3, 4, 5, 6, 8, 10, 12] // mm
+                  : [3.175, 4.7625, 6.35, 7.9375, 9.525, 12.7] // inches: 1/8", 3/16", 1/4", 5/16", 3/8", 1/2"
+                const presetLabels = displayUnit === 'mm'
+                  ? ['3mm', '4mm', '5mm', '6mm', '8mm', '10mm', '12mm']
+                  : ['1/8"', '3/16"', '1/4"', '5/16"', '3/8"', '1/2"']
+
+                return (
+                  <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-300 shadow-sm">
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="text-sm font-bold text-blue-900">Selected Hole</span>
+                      <button
+                        onClick={() => setSelectedHoleId(null)}
+                        className="text-xs text-blue-600 hover:text-blue-800"
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    {/* Diameter Dropdown */}
+                    <div className="mb-2">
+                      <label className="block text-xs mb-1 font-medium text-neutral-900">
+                        Diameter
+                      </label>
+                      <select
+                        value={diameterPresets.find(p => Math.abs(p - diameterMm) < 0.1) ? diameterMm.toFixed(4) : 'custom'}
+                        onChange={e => {
+                          if (e.target.value !== 'custom') {
+                            handleUpdateHoleDiameter(selectedHole.id, parseFloat(e.target.value))
+                          }
+                        }}
+                        className="w-full px-2 py-1 border border-neutral-300 rounded-lg text-sm bg-white text-neutral-900"
+                      >
+                        {diameterPresets.map((preset, idx) => (
+                          <option key={preset} value={preset.toFixed(4)}>
+                            {presetLabels[idx]}
+                          </option>
+                        ))}
+                        <option value="custom">Custom</option>
+                      </select>
+                    </div>
+
+                    {/* Custom Diameter Input */}
+                    <div className="mb-2">
+                      <label className="block text-xs mb-1 font-medium text-neutral-900">
+                        Custom Diameter ({displayUnit})
+                      </label>
+                      <input
+                        type="number"
+                        value={fromMm(diameterMm, displayUnit).toFixed(2)}
+                        onChange={e => {
+                          const val = parseFloat(e.target.value)
+                          if (!isNaN(val) && val > 0) handleUpdateHoleDiameter(selectedHole.id, val)
+                        }}
+                        className="w-full px-2 py-1 border border-neutral-300 rounded-lg text-sm bg-white text-neutral-900"
+                        step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
+                        min={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
+                      />
+                    </div>
+
+                    {/* X Position (from bottom-left) */}
+                    <div className="mb-2">
+                      <label className="block text-xs mb-1 font-medium text-neutral-900">
+                        X from Bottom-Left ({displayUnit})
+                      </label>
+                      <input
+                        type="number"
+                        value={fromMm(bottomLeftPos.x, displayUnit).toFixed(2)}
+                        onChange={e => {
+                          const val = parseFloat(e.target.value)
+                          if (!isNaN(val)) handleUpdateHolePositionBottomLeft(selectedHole.id, val, fromMm(bottomLeftPos.y, displayUnit))
+                        }}
+                        className="w-full px-2 py-1 border border-neutral-300 rounded-lg text-sm bg-white text-neutral-900"
+                        step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
+                      />
+                    </div>
+
+                    {/* Y Position (from bottom-left) */}
+                    <div>
+                      <label className="block text-xs mb-1 font-medium text-neutral-900">
+                        Y from Bottom-Left ({displayUnit})
+                      </label>
+                      <input
+                        type="number"
+                        value={fromMm(bottomLeftPos.y, displayUnit).toFixed(2)}
+                        onChange={e => {
+                          const val = parseFloat(e.target.value)
+                          if (!isNaN(val)) handleUpdateHolePositionBottomLeft(selectedHole.id, fromMm(bottomLeftPos.x, displayUnit), val)
+                        }}
+                        className="w-full px-2 py-1 border border-neutral-300 rounded-lg text-sm bg-white text-neutral-900"
+                        step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.01' : '0.1'}
+                      />
+                    </div>
                   </div>
-                </>
+                )
+              })()}
+
+              {/* Holes Table */}
+              {selectedShape.holes && selectedShape.holes.length > 0 && (
+                <div className="mt-4 p-3 bg-neutral-50 rounded-lg border border-neutral-300 shadow-sm">
+                  <h3 className="text-sm font-bold text-neutral-900 mb-2">
+                    Holes ({selectedShape.holes.length})
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b border-neutral-300 text-neutral-900 font-semibold">
+                          <th className="text-left py-1 px-1">#</th>
+                          <th className="text-left py-1 px-1">Ø ({displayUnit})</th>
+                          <th className="text-left py-1 px-1">X ({displayUnit})</th>
+                          <th className="text-left py-1 px-1">Y ({displayUnit})</th>
+                          <th className="text-center py-1 px-1">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedShape.holes.filter(h => h.type === 'circle').map((hole, index) => {
+                          const bottomLeftPos = holeToBottomLeft(hole.position.x, hole.position.y, selectedShape)
+                          const isSelected = hole.id === selectedHoleId
+                          return (
+                            <tr
+                              key={hole.id}
+                              onClick={() => setSelectedHoleId(hole.id)}
+                              className={`border-b border-neutral-200 cursor-pointer hover:bg-blue-50 ${
+                                isSelected ? 'bg-blue-100 text-neutral-900' : 'text-neutral-900'
+                              }`}
+                            >
+                              <td className="py-1 px-1 text-neutral-900">{index + 1}</td>
+                              <td className="py-1 px-1 text-neutral-900">
+                                {hole.radius ? fromMm(hole.radius * 2, displayUnit).toFixed(2) : '0.00'}
+                              </td>
+                              <td className="py-1 px-1 text-neutral-900">
+                                {fromMm(bottomLeftPos.x, displayUnit).toFixed(2)}
+                              </td>
+                              <td className="py-1 px-1 text-neutral-900">
+                                {fromMm(bottomLeftPos.y, displayUnit).toFixed(2)}
+                              </td>
+                              <td className="py-1 px-1 text-center">
+                                <button
+                                  onClick={e => {
+                                    e.stopPropagation()
+                                    handleDeleteHole(hole.id)
+                                  }}
+                                  className="px-2 py-0.5 bg-rose-500 hover:bg-rose-600 text-white rounded text-xs"
+                                >
+                                  ✕
+                                </button>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Bends Section - Only for rectangles */}
+              {selectedShape?.type === 'rectangle' && (
+                <div className="mt-6">
+                  <h2 className="font-heading text-lg font-bold mb-3 text-neutral-900 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                    </svg>
+                    Sheet Metal Bends
+                  </h2>
+
+                  <div className="p-3 bg-orange-50 rounded-lg border border-orange-300 space-y-2">
+                    <div>
+                      <label className="block text-xs mb-1 font-medium text-neutral-900">
+                        Position from {newBendOrientation === 'horizontal' ? 'Bottom' : 'Left'} Edge ({displayUnit})
+                      </label>
+                      <input
+                        type="number"
+                        value={newBendPosition}
+                        onChange={e => setNewBendPosition(parseFloat(e.target.value) || 0)}
+                        className="w-full px-2 py-1 border border-neutral-300 rounded-lg text-sm bg-white text-neutral-900"
+                        step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.1' : '1'}
+                        min="0"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs mb-1 font-medium text-neutral-900">
+                        Orientation
+                      </label>
+                      <select
+                        value={newBendOrientation}
+                        onChange={e => setNewBendOrientation(e.target.value as 'horizontal' | 'vertical')}
+                        disabled={selectedShape.bends && selectedShape.bends.length > 0}
+                        className="w-full px-2 py-1 border border-neutral-300 rounded-lg text-sm bg-white text-neutral-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <option value="horizontal">Horizontal (↔)</option>
+                        <option value="vertical">Vertical (↕)</option>
+                      </select>
+                      {selectedShape.bends && selectedShape.bends.length > 0 && (
+                        <p className="text-xs text-neutral-500 mt-1 italic">
+                          Orientation locked to {selectedShape.bends[0].orientation}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-xs mb-1 font-medium text-neutral-900">
+                        Bend Angle
+                      </label>
+                      <select
+                        value={newBendAngle}
+                        onChange={e => setNewBendAngle(parseFloat(e.target.value))}
+                        className="w-full px-2 py-1 border border-neutral-300 rounded-lg text-sm bg-white text-neutral-900"
+                      >
+                        <option value={90}>90°</option>
+                        <option value={45}>45°</option>
+                        <option value={30}>30°</option>
+                        <option value={135}>135°</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs mb-1 font-medium text-neutral-900">
+                        Custom Angle (degrees)
+                      </label>
+                      <input
+                        type="number"
+                        value={newBendAngle}
+                        onChange={e => setNewBendAngle(parseFloat(e.target.value) || 90)}
+                        className="w-full px-2 py-1 border border-neutral-300 rounded-lg text-sm bg-white text-neutral-900"
+                        step="1"
+                        min="0"
+                        max="180"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs mb-1 font-medium text-neutral-900">
+                        Bend Direction
+                      </label>
+                      <select
+                        value={newBendDirection}
+                        onChange={e => setNewBendDirection(e.target.value as 'up' | 'down')}
+                        className="w-full px-2 py-1 border border-neutral-300 rounded-lg text-sm bg-white text-neutral-900"
+                      >
+                        <option value="up">Up (+Z)</option>
+                        <option value="down">Down (-Z)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs mb-1 font-medium text-neutral-900">
+                        Inside Bend Radius ({displayUnit})
+                      </label>
+                      <input
+                        type="number"
+                        value={newBendRadius}
+                        onChange={e => setNewBendRadius(parseFloat(e.target.value) || material.thickness)}
+                        className="w-full px-2 py-1 border border-neutral-300 rounded-lg text-sm bg-white text-neutral-900"
+                        step={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.1' : '0.1'}
+                        min={displayUnit === 'm' ? '0.001' : displayUnit === 'cm' ? '0.1' : '0.1'}
+                      />
+                      <p className="text-xs text-neutral-500 mt-1 italic">
+                        Typical: 1× to 2× material thickness ({material.thickness}mm)
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={handleAddBend}
+                      className="w-full px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-semibold shadow-sm"
+                    >
+                      Add Bend Line
+                    </button>
+                  </div>
+
+                  {/* Bends Table */}
+                  {selectedShape.bends && selectedShape.bends.length > 0 && (
+                    <div className="mt-4 p-3 bg-neutral-50 rounded-lg border border-neutral-300 shadow-sm">
+                      <h3 className="text-sm font-bold text-neutral-900 mb-2">
+                        Bend Lines ({selectedShape.bends.length})
+                      </h3>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="border-b border-neutral-300 text-neutral-900 font-semibold">
+                              <th className="text-left py-1 px-1">#</th>
+                              <th className="text-left py-1 px-1">Orient.</th>
+                              <th className="text-left py-1 px-1">Pos ({displayUnit})</th>
+                              <th className="text-left py-1 px-1">Angle</th>
+                              <th className="text-left py-1 px-1">Dir.</th>
+                              <th className="text-center py-1 px-1">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {selectedShape.bends.map((bend, index) => {
+                              const isSelected = bend.id === selectedBendId
+                              return (
+                                <tr
+                                  key={bend.id}
+                                  onClick={() => setSelectedBendId(bend.id)}
+                                  className={`border-b border-neutral-200 cursor-pointer hover:bg-orange-50 ${
+                                    isSelected ? 'bg-orange-100 text-neutral-900' : 'text-neutral-900'
+                                  }`}
+                                >
+                                  <td className="py-1 px-1 text-neutral-900">{index + 1}</td>
+                                  <td className="py-1 px-1 text-neutral-900">
+                                    {bend.orientation === 'horizontal' ? '↔' : '↕'}
+                                  </td>
+                                  <td className="py-1 px-1 text-neutral-900">
+                                    {fromMm(bend.position, displayUnit).toFixed(1)}
+                                  </td>
+                                  <td className="py-1 px-1 text-neutral-900">{bend.angle}°</td>
+                                  <td className="py-1 px-1 text-neutral-900">
+                                    {bend.direction === 'up' ? '↑' : '↓'}
+                                  </td>
+                                  <td className="py-1 px-1 text-center">
+                                    <button
+                                      onClick={e => {
+                                        e.stopPropagation()
+                                        handleDeleteBend(bend.id)
+                                      }}
+                                      className="px-2 py-0.5 bg-rose-500 hover:bg-rose-600 text-white rounded text-xs"
+                                    >
+                                      ✕
+                                    </button>
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
             </>
           )}
@@ -1284,9 +1678,128 @@ function DesignerContent() {
 
         {/* Canvas area */}
         <main className="flex-1">
-          <DesignCanvas is2DView={is2DView} displayUnit={displayUnit} thickness={material.thickness} />
+          <DesignCanvas
+            is2DView={is2DView}
+            displayUnit={displayUnit}
+            thickness={material.thickness}
+            holePlacementMode={holePlacementMode}
+            onHolePlaced={handleCanvasClickForHole}
+            selectedHoleId={selectedHoleId}
+            onHoleSelected={setSelectedHoleId}
+            selectedBendId={selectedBendId}
+            onBendSelected={setSelectedBendId}
+          />
         </main>
       </div>
+
+      {/* Quote Calculator Modal */}
+      {isQuoteModalOpen && (
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold text-neutral-900">Price Estimate</h2>
+              <button
+                onClick={() => setIsQuoteModalOpen(false)}
+                className="text-neutral-500 hover:text-neutral-700"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {shapes.length === 0 ? (
+              <p className="text-neutral-600 mb-4">Please add shapes to your design to calculate a quote.</p>
+            ) : (
+              <>
+                {/* Quantity Input */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-neutral-900 mb-2">
+                    Quantity
+                  </label>
+                  <input
+                    type="number"
+                    value={quoteQuantity}
+                    onChange={e => setQuoteQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-green-500 bg-white text-neutral-900"
+                    min="1"
+                  />
+                </div>
+
+                {/* Quote Breakdown */}
+                {(() => {
+                  const quote = calculateQuote(quoteQuantity)
+                  if (!quote) return null
+
+                  return (
+                    <div className="space-y-3">
+                      <div className="bg-neutral-50 p-4 rounded-lg space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-neutral-700">Material ({material.name} {material.thickness}mm)</span>
+                          <span className="font-medium text-neutral-900">${quote.materialCost.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-neutral-700">Laser Cutting</span>
+                          <span className="font-medium text-neutral-900">${quote.cuttingCost.toFixed(2)}</span>
+                        </div>
+                        {quote.totalBends > 0 && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-neutral-700">Bending ({quote.totalBends} bends)</span>
+                            <span className="font-medium text-neutral-900">${quote.bendCost.toFixed(2)}</span>
+                          </div>
+                        )}
+                        <div className="border-t border-neutral-300 pt-2 mt-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-neutral-700">Subtotal (per unit)</span>
+                            <span className="font-medium text-neutral-900">${quote.subtotal.toFixed(2)}</span>
+                          </div>
+                        </div>
+                        {quote.quantity > 1 && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-neutral-700">Quantity</span>
+                            <span className="font-medium text-neutral-900">× {quote.quantity}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="bg-green-50 p-4 rounded-lg border-2 border-green-600">
+                        <div className="flex justify-between items-center">
+                          <span className="text-lg font-bold text-neutral-900">Total Estimate</span>
+                          <span className="text-2xl font-bold text-green-700">${quote.total.toFixed(2)}</span>
+                        </div>
+                      </div>
+
+                      <p className="text-xs text-neutral-500 italic">
+                        * This is an estimate. Final price may vary based on complexity and material availability.
+                      </p>
+                    </div>
+                  )
+                })()}
+              </>
+            )}
+
+            <div className="mt-6 flex gap-2">
+              <button
+                onClick={() => setIsQuoteModalOpen(false)}
+                className="flex-1 px-4 py-2 bg-neutral-200 hover:bg-neutral-300 text-neutral-800 rounded-lg transition font-semibold"
+              >
+                Close
+              </button>
+              {shapes.length > 0 && (
+                <button
+                  onClick={() => {
+                    setIsQuoteModalOpen(false)
+                    setIsSubmitModalOpen(true)
+                  }}
+                  className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition font-semibold"
+                >
+                  Submit Job
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Submit Job Modal */}
       <SubmitJobModal
