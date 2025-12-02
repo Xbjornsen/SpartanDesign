@@ -4,8 +4,9 @@ import { Shape, Material } from '@/lib/types'
 import { calculateQuote, formatQuoteForEmail } from '@/lib/quoteCalculation'
 import { exportBendInstructionsText } from '@/lib/exportSVG'
 
-// Engineer's email - can be configured via environment variable
+// Email configuration - can be configured via environment variables
 const ENGINEER_EMAIL = process.env.ENGINEER_EMAIL || 'engineer@spartandesign.com'
+const FROM_EMAIL = process.env.FROM_EMAIL || 'onboarding@resend.dev'
 
 export async function POST(request: NextRequest) {
   try {
@@ -285,7 +286,7 @@ export async function POST(request: NextRequest) {
 
     // Send email with attachments
     const { data, error } = await resend.emails.send({
-      from: 'Spartan Design <onboarding@resend.dev>',
+      from: FROM_EMAIL,
       to: [ENGINEER_EMAIL],
       replyTo: customerDetails.email,
       subject: `New Job Request from ${customerDetails.fullName} - ${material.name} ${material.thickness}${material.unit}${hasBends ? ' [BENDING REQUIRED]' : ''}`,
