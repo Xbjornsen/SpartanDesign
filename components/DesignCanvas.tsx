@@ -704,16 +704,13 @@ function BendLines({
           >
             {/* Bend line */}
             <line>
-              <bufferGeometry attach="geometry">
+              <bufferGeometry>
                 <bufferAttribute
                   attach="attributes-position"
-                  count={2}
-                  array={new Float32Array([...lineStart, ...lineEnd])}
-                  itemSize={3}
+                  args={[new Float32Array([...lineStart, ...lineEnd]), 3]}
                 />
               </bufferGeometry>
               <lineBasicMaterial
-                attach="material"
                 color={isSelected ? '#f97316' : '#ea580c'}
                 linewidth={isSelected ? 3 : 2}
               />
