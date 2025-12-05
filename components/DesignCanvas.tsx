@@ -433,6 +433,7 @@ function Shape3D({
         return (
           <mesh
             position={[rect.position.x, yPosition, rect.position.y]}
+            rotation={[0, shape.rotation || 0, 0]}
             onClick={handleClick}
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
@@ -459,6 +460,7 @@ function Shape3D({
         return (
           <mesh
             position={[rect.position.x, yPosition, rect.position.y]}
+            rotation={[0, shape.rotation || 0, 0]}
             onClick={handleClick}
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
@@ -481,6 +483,7 @@ function Shape3D({
       return (
         <mesh
           position={[rect.position.x, yPosition, rect.position.y]}
+          rotation={[0, shape.rotation || 0, 0]}
           onClick={handleClick}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
@@ -507,6 +510,7 @@ function Shape3D({
       return (
         <mesh
           position={[circle.position.x, yPosition, circle.position.y]}
+          rotation={[0, shape.rotation || 0, 0]}
           onClick={handleClick}
           onPointerDown={handlePointerDown}
           onPointerOver={() => setHovered(true)}
@@ -533,7 +537,7 @@ function Shape3D({
       return (
         <mesh
           position={[triangle.position.x, yPosition, triangle.position.y]}
-          rotation={[-Math.PI / 2, 0, 0]}
+          rotation={[-Math.PI / 2, shape.rotation || 0, 0]}
           onClick={handleClick}
           onPointerDown={handlePointerDown}
           onPointerOver={() => setHovered(true)}
@@ -557,7 +561,7 @@ function Shape3D({
       return (
         <mesh
           position={[pentagon.position.x, yPosition, pentagon.position.y]}
-          rotation={[-Math.PI / 2, 0, 0]}
+          rotation={[-Math.PI / 2, shape.rotation || 0, 0]}
           onClick={handleClick}
           onPointerDown={handlePointerDown}
           onPointerOver={() => setHovered(true)}
@@ -581,7 +585,7 @@ function Shape3D({
       return (
         <mesh
           position={[hexagon.position.x, yPosition, hexagon.position.y]}
-          rotation={[-Math.PI / 2, 0, 0]}
+          rotation={[-Math.PI / 2, shape.rotation || 0, 0]}
           onClick={handleClick}
           onPointerDown={handlePointerDown}
           onPointerOver={() => setHovered(true)}
@@ -605,7 +609,7 @@ function Shape3D({
       return (
         <mesh
           position={[star.position.x, yPosition, star.position.y]}
-          rotation={[-Math.PI / 2, 0, 0]}
+          rotation={[-Math.PI / 2, shape.rotation || 0, 0]}
           onClick={handleClick}
           onPointerDown={handlePointerDown}
           onPointerOver={() => setHovered(true)}
@@ -629,7 +633,7 @@ function Shape3D({
       return (
         <mesh
           position={[heart.position.x, yPosition, heart.position.y]}
-          rotation={[-Math.PI / 2, 0, 0]}
+          rotation={[-Math.PI / 2, shape.rotation || 0, 0]}
           onClick={handleClick}
           onPointerDown={handlePointerDown}
           onPointerOver={() => setHovered(true)}
@@ -651,6 +655,7 @@ function Shape3D({
       return (
         <group
           position={[text.position.x, yPosition, text.position.y]}
+          rotation={[0, shape.rotation || 0, 0]}
           onClick={handleClick}
           onPointerDown={handlePointerDown}
           onPointerOver={() => setHovered(true)}
