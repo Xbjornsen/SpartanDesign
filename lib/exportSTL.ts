@@ -134,8 +134,7 @@ function createMeshFromShape(shape: Shape, thickness: number): THREE.Mesh | null
             holeBrush.updateMatrixWorld()
 
             // Subtract hole from base
-            const result = evaluator.evaluate(baseBrush, holeBrush, SUBTRACTION)
-            baseBrush = new Brush(result)
+            baseBrush = evaluator.evaluate(baseBrush, holeBrush, SUBTRACTION)
           })
 
           geometry = baseBrush.geometry
@@ -173,8 +172,7 @@ function createMeshFromShape(shape: Shape, thickness: number): THREE.Mesh | null
               holeBrush.position.set(hole.position.x, 0, hole.position.y)
               holeBrush.updateMatrixWorld()
 
-              const result = evaluator.evaluate(baseBrush, holeBrush, SUBTRACTION)
-              baseBrush = new Brush(result)
+              baseBrush = evaluator.evaluate(baseBrush, holeBrush, SUBTRACTION)
             }
           })
 
