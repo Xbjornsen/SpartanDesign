@@ -279,6 +279,11 @@ export function exportToSTL(shapes: Shape[], thickness: number = 2): ArrayBuffer
   const exporter = new STLExporter()
   const stlBinary = exporter.parse(scene, { binary: true })
 
+  // STLExporter returns DataView for binary, extract the underlying ArrayBuffer
+  if (stlBinary instanceof DataView) {
+    return stlBinary.buffer
+  }
+
   return stlBinary as ArrayBuffer
 }
 
