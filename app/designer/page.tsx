@@ -19,8 +19,49 @@ import {
   Shape,
 } from '@/lib/types'
 import { exportToSVG, downloadSVG, exportBendInstructions, downloadBendInstructions } from '@/lib/exportSVG'
+import { downloadSTL } from '@/lib/exportSTL'
 import ShapePalette from '@/components/ShapePalette'
 import SubmitJobModal, { CustomerDetails } from '@/components/SubmitJobModal'
+
+// Auto-save indicator component
+function AutoSaveIndicator({ lastSaved }: { lastSaved: Date | null }) {
+  const [timeAgo, setTimeAgo] = useState<string>('Never')
+
+  useEffect(() => {
+    if (!lastSaved) return
+
+    const updateTimeAgo = () => {
+      const seconds = Math.floor((Date.now() - lastSaved.getTime()) / 1000)
+
+      if (seconds < 60) {
+        setTimeAgo(`${seconds}s ago`)
+      } else if (seconds < 3600) {
+        setTimeAgo(`${Math.floor(seconds / 60)}m ago`)
+      } else {
+        setTimeAgo(`${Math.floor(seconds / 3600)}h ago`)
+      }
+    }
+
+    updateTimeAgo()
+    const timer = setInterval(updateTimeAgo, 1000)
+    return () => clearInterval(timer)
+  }, [lastSaved])
+
+  return (
+    <div className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1 px-2">
+      {lastSaved ? (
+        <>
+          <svg className="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M7.707 10.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V6h5a2 2 0 012 2v7a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2h5v5.586l-1.293-1.293zM9 4a1 1 0 012 0v2H9V4z" />
+          </svg>
+          <span>Saved {timeAgo}</span>
+        </>
+      ) : (
+        <span>No autosave yet</span>
+      )}
+    </div>
+  )
+}
 
 const materials: Material[] = [
   // Mild Steel
@@ -162,6 +203,12 @@ function DesignerContent() {
   const [isToolsCollapsed, setIsToolsCollapsed] = useState(false)
   const [isShapeLibraryCollapsed, setIsShapeLibraryCollapsed] = useState(true)
 
+  // Auto-save state
+  const [lastSaved, setLastSaved] = useState<Date | null>(null)
+
+  // Export dropdown state
+  const [isExportDropdownOpen, setIsExportDropdownOpen] = useState(false)
+
   const selectedShape = shapes.find(s => s.id === selectedShapeId)
 
   // Sync bend orientation with existing bends when shape is selected
@@ -267,6 +314,80 @@ function DesignerContent() {
       }
     }
   }, [selectedShapeId, selectedShape, displayUnit])
+
+  // Auto-save to localStorage
+  useEffect(() => {
+    // Check for existing autosave on mount
+    const checkAutosave = () => {
+      try {
+        const autosaveKeys = Object.keys(localStorage)
+          .filter(key => key.startsWith('autosave_'))
+          .sort()
+          .reverse()
+
+        if (autosaveKeys.length > 0 && shapes.length === 0) {
+          const latestKey = autosaveKeys[0]
+          const timestamp = parseInt(latestKey.replace('autosave_', ''))
+          const savedData = localStorage.getItem(latestKey)
+
+          if (savedData) {
+            const savedDate = new Date(timestamp)
+            const shouldRestore = confirm(
+              `Found autosaved design from ${savedDate.toLocaleString()}.\n\nRestore it?`
+            )
+
+            if (shouldRestore) {
+              const { shapes: savedShapes } = JSON.parse(savedData)
+              savedShapes.forEach((shape: Shape) => {
+                addShape(shape)
+              })
+              console.log('Restored autosaved design')
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error checking autosave:', error)
+      }
+    }
+
+    checkAutosave()
+  }, []) // Only run on mount
+
+  // Auto-save interval (every 30 seconds)
+  useEffect(() => {
+    if (shapes.length === 0) return
+
+    const timer = setInterval(() => {
+      try {
+        const timestamp = Date.now()
+        const autosaveData = {
+          shapes,
+          material,
+          timestamp
+        }
+
+        localStorage.setItem(`autosave_${timestamp}`, JSON.stringify(autosaveData))
+        setLastSaved(new Date())
+
+        // Clean up old autosaves (keep last 5)
+        const autosaveKeys = Object.keys(localStorage)
+          .filter(key => key.startsWith('autosave_'))
+          .sort()
+
+        if (autosaveKeys.length > 5) {
+          autosaveKeys.slice(0, -5).forEach(key => {
+            localStorage.removeItem(key)
+          })
+        }
+
+        console.log('Design auto-saved at', new Date().toLocaleTimeString())
+      } catch (error) {
+        console.error('Auto-save failed:', error)
+      }
+    }, 30000) // 30 seconds
+
+    return () => clearInterval(timer)
+  }, [shapes, material])
 
   // Update selected shape dimensions in real-time (convert to mm for storage)
   const handleWidthChange = (value: number) => {
@@ -676,6 +797,20 @@ function DesignerContent() {
     }
   }
 
+  const handleExportSTL = () => {
+    if (shapes.length === 0) {
+      alert('No shapes to export. Please add some shapes first.')
+      return
+    }
+
+    try {
+      downloadSTL(shapes, selectedThickness, `design-${Date.now()}.stl`)
+    } catch (error) {
+      console.error('STL export failed:', error)
+      alert('Error exporting STL: ' + (error as Error).message)
+    }
+  }
+
   const handleExportBendInstructions = () => {
     // Check if any shapes have bends
     const hasBends = shapes.some(shape => shape.bends && shape.bends.length > 0)
@@ -818,6 +953,9 @@ function DesignerContent() {
           </h1>
         </div>
         <div className="flex gap-3 items-center">
+          {/* Auto-save indicator */}
+          <AutoSaveIndicator lastSaved={lastSaved} />
+
           {/* View Toggle */}
           <div className="flex bg-slate-200 rounded-lg p-1 border-2 border-slate-300">
             <button
@@ -842,16 +980,57 @@ function DesignerContent() {
             </button>
           </div>
 
-          {/* Export Button */}
-          <button
-            onClick={handleExportSVG}
-            className="px-4 py-2 bg-slate-500 hover:bg-slate-600 text-white rounded-lg transition-all shadow-md font-semibold flex items-center gap-2 border-2 border-slate-600"
-          >
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-            <span className="text-white">Export SVG</span>
-          </button>
+          {/* Export Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setIsExportDropdownOpen(!isExportDropdownOpen)}
+              className="px-4 py-2 bg-slate-500 hover:bg-slate-600 text-white rounded-lg transition-all shadow-md font-semibold flex items-center gap-2 border-2 border-slate-600"
+            >
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              <span className="text-white">Export</span>
+              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {/* Dropdown Menu */}
+            {isExportDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border-2 border-slate-300 z-50">
+                <button
+                  onClick={() => {
+                    handleExportSVG()
+                    setIsExportDropdownOpen(false)
+                  }}
+                  className="w-full px-4 py-3 text-left hover:bg-slate-100 flex items-center gap-3 border-b border-slate-200 transition-colors"
+                >
+                  <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <div>
+                    <div className="font-semibold text-slate-900">Export SVG</div>
+                    <div className="text-xs text-slate-500">For laser cutting</div>
+                  </div>
+                </button>
+                <button
+                  onClick={() => {
+                    handleExportSTL()
+                    setIsExportDropdownOpen(false)
+                  }}
+                  className="w-full px-4 py-3 text-left hover:bg-slate-100 flex items-center gap-3 transition-colors rounded-b-lg"
+                >
+                  <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                  </svg>
+                  <div>
+                    <div className="font-semibold text-slate-900">Export STL</div>
+                    <div className="text-xs text-slate-500">For 3D printing</div>
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* Quote Calculator Button */}
           <button
@@ -1118,6 +1297,35 @@ function DesignerContent() {
                   </p>
                 </div>
               )}
+              {/* Rotation Control - Available for all shapes */}
+              <div>
+                <label className="block text-sm mb-1 font-medium text-neutral-900">
+                  Rotation (degrees)
+                </label>
+                <input
+                  type="number"
+                  value={
+                    selectedShape?.rotation
+                      ? Math.round((selectedShape.rotation * 180) / Math.PI)
+                      : 0
+                  }
+                  onChange={e => {
+                    const degrees = parseFloat(e.target.value) || 0
+                    const radians = (degrees * Math.PI) / 180
+                    if (selectedShape) {
+                      updateShape(selectedShape.id, { rotation: radians })
+                    }
+                  }}
+                  className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-accent-500 bg-white text-neutral-900 shadow-sm"
+                  placeholder="0"
+                  step="1"
+                  min="0"
+                  max="360"
+                />
+                <p className="text-xs text-neutral-500 mt-1 italic">
+                  0° to 360°, rotates clockwise
+                </p>
+              </div>
             </div>
           )}
 
